@@ -13,6 +13,7 @@ from .assets import AssetBundle, create_element, create_flat_object, create_text
 from .easing import choose_render_engine
 from .encoding import encode_png_sequence
 from .layout import resolve_scene_elements
+from .lipsync import LipCue, cue_frame_range, load_lip_sync
 from .motions import apply_motion
 from .registry import AssetRegistry
 from .schema import Storyboard, load_storyboard
@@ -83,6 +84,64 @@ def _register_bundle(registry: dict[str, Any], local_id: str, bundle: AssetBundl
         registry[f"{local_id}.{part_name}"] = obj
 
 
+def _keyframe_mouth_sprites(closed, opened, frame: int, *, is_open: bool) -> None:
+    closed.hide_render = is_open
+    closed.keyframe_insert(data_path="hide_render", frame=frame)
+    opened.hide_render = not is_open
+    opened.keyframe_insert(data_path="hide_render", frame=frame)
+
+
+def _apply_lip_sync(
+    cues: list[LipCue],
+    registry: dict[str, Any],
+    scene_start: int,
+    scene_end: int,
+    fps: int,
+) -> None:
+    """Apply audio-derived word intervals to mouth sprites or a fallback mouth scale."""
+    targets = sorted({cue.target for cue in cues})
+    for target in targets:
+        if target not in registry:
+            raise ValueError(f"lip-sync target {target!r} does not exist in scene")
+        closed = registry.get(f"{target}.mouth_closed")
+        opened = registry.get(f"{target}.mouth_open")
+        target_cues = [cue for cue in cues if cue.target == target]
+        if closed is not None and opened is not None:
+            _keyframe_mouth_sprites(closed, opened, scene_start, is_open=False)
+            for cue in target_cues:
+                open_frame, close_frame = cue_frame_range(cue, scene_start, scene_end, fps)
+                if close_frame <= open_frame:
+                    continue
+                _keyframe_mouth_sprites(
+                    closed,
+                    opened,
+                    max(scene_start, open_frame - 1),
+                    is_open=False,
+                )
+                _keyframe_mouth_sprites(closed, opened, open_frame, is_open=True)
+                _keyframe_mouth_sprites(closed, opened, close_frame, is_open=False)
+            continue
+
+        mouth = registry.get(f"{target}.mouth")
+        if mouth is None:
+            raise ValueError(
+                f"lip-sync target {target!r} needs mouth_closed/mouth_open sprites or a mouth part"
+            )
+        base_scale = mouth.scale.copy()
+        mouth.scale = base_scale
+        mouth.keyframe_insert(data_path="scale", frame=scene_start)
+        for cue in target_cues:
+            open_frame, close_frame = cue_frame_range(cue, scene_start, scene_end, fps)
+            if close_frame <= open_frame:
+                continue
+            mouth.scale = base_scale
+            mouth.keyframe_insert(data_path="scale", frame=max(scene_start, open_frame - 1))
+            mouth.scale.y = base_scale.y * 2.8
+            mouth.keyframe_insert(data_path="scale", frame=open_frame)
+            mouth.scale = base_scale
+            mouth.keyframe_insert(data_path="scale", frame=close_frame)
+
+
 def _apply_attachments(
     elements: list[dict[str, Any]],
     bundles: dict[str, AssetBundle],
@@ -138,7 +197,12 @@ def _create_subtitle(scene_id: str, index: int, subtitle: dict[str, Any], world_
     return AssetBundle(root=text, renderables=[text])
 
 
-def build_storyboard(storyboard: Storyboard, output_path: Path):
+def build_storyboard(
+    storyboard: Storyboard,
+    output_path: Path,
+    *,
+    lip_sync: dict[str, list[LipCue]] | None = None,
+):
     reset_blender()
     scene, camera, frames_dir = setup_render(storyboard, output_path)
     aspect = storyboard.settings.width / storyboard.settings.height
@@ -201,6 +265,15 @@ def build_storyboard(storyboard: Storyboard, output_path: Path):
                 target=target,
             )
 
+        if lip_sync is not None:
+            _apply_lip_sync(
+                lip_sync.get(scene_id, []),
+                registry,
+                scene_start,
+                scene_end,
+                fps,
+            )
+
         for index, subtitle in enumerate(scene_data.get("subtitles", [])):
             bundle = _create_subtitle(scene_id, index, subtitle, world_height)
             subtitle_start = scene_start + round(float(subtitle.get("start", 0)) * fps)
@@ -221,11 +294,15 @@ def render_storyboard(
     save_blend: str | Path | None = None,
     render: bool = True,
     keep_frames: bool = False,
+    audio_path: str | Path | None = None,
+    lip_sync_path: str | Path | None = None,
 ) -> Storyboard:
     storyboard = load_storyboard(storyboard_path)
     resolved_output = Path(output_path).expanduser().resolve()
     resolved_output.parent.mkdir(parents=True, exist_ok=True)
-    _scene, frames_dir = build_storyboard(storyboard, resolved_output)
+    resolved_audio = Path(audio_path).expanduser().resolve() if audio_path is not None else None
+    lip_sync = load_lip_sync(lip_sync_path) if lip_sync_path is not None else None
+    _scene, frames_dir = build_storyboard(storyboard, resolved_output, lip_sync=lip_sync)
     if save_blend:
         blend_path = Path(save_blend).expanduser().resolve()
         blend_path.parent.mkdir(parents=True, exist_ok=True)
@@ -235,7 +312,12 @@ def render_storyboard(
             shutil.rmtree(frames_dir)
         frames_dir.mkdir(parents=True, exist_ok=True)
         bpy.ops.render.render(animation=True)
-        encode_png_sequence(frames_dir, storyboard.settings.fps, resolved_output)
+        encode_png_sequence(
+            frames_dir,
+            storyboard.settings.fps,
+            resolved_output,
+            audio_path=resolved_audio,
+        )
         if not keep_frames:
             shutil.rmtree(frames_dir)
     return storyboard

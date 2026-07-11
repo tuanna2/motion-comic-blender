@@ -8,7 +8,13 @@
     "world_height": 9,
     "background_color": "#0f172a",
     "samples": 16,
-    "asset_library": "../../assets"
+    "asset_library": "../../assets",
+    "tts": {
+      "voice": "vi-VN-HoaiMyNeural",
+      "rate": "+8%",
+      "volume": "+0%",
+      "pitch": "+0Hz"
+    }
   },
   "scenes": [
     {
@@ -67,13 +73,6 @@
         },
         {
           "target": "angler",
-          "preset": "talk",
-          "start": 1.0,
-          "end": 3.2,
-          "params": {"pulses": 12, "open": 3.2}
-        },
-        {
-          "target": "angler",
           "preset": "nod",
           "start": 1.1,
           "end": 2.8,
@@ -98,7 +97,8 @@
         {
           "start": 1.0,
           "end": 3.4,
-          "text": "Hôm nay nhất định phải bắt được cá lớn!"
+          "text": "Hôm nay nhất định phải bắt được cá lớn!",
+          "speaker": "angler"
         }
       ]
     },
@@ -213,12 +213,14 @@
         {
           "start": 0.3,
           "end": 2.2,
-          "text": "Cắn câu rồi... kéo!"
+          "text": "Cắn câu rồi... kéo!",
+          "speaker": "angler"
         },
         {
           "start": 3.0,
           "end": 5.5,
-          "text": "Khoan, con cá này lớn quá!"
+          "text": "Khoan, con cá này lớn quá!",
+          "speaker": "angler"
         }
       ]
     }

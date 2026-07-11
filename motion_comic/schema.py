@@ -42,6 +42,14 @@ class StoryboardError(ValueError):
 
 
 @dataclass(frozen=True)
+class TTSSettings:
+    voice: str = "vi-VN-HoaiMyNeural"
+    rate: str = "+0%"
+    volume: str = "+0%"
+    pitch: str = "+0Hz"
+
+
+@dataclass(frozen=True)
 class RenderSettings:
     width: int = 1280
     height: int = 720
@@ -50,6 +58,7 @@ class RenderSettings:
     background_color: str = "#111827"
     samples: int = 16
     asset_library: str = "assets"
+    tts: TTSSettings = field(default_factory=TTSSettings)
 
 
 @dataclass(frozen=True)
@@ -165,6 +174,18 @@ def _validate_scene(scene: dict[str, Any], index: int) -> None:
         start = _number(subtitle.get("start", 0), f"scene {scene_id}: subtitle start")
         end = _number(subtitle.get("end", duration), f"scene {scene_id}: subtitle end")
         _require(0 <= start < end <= duration + 1e-6, f"scene {scene_id}: invalid subtitle range")
+        speaker = subtitle.get("speaker")
+        if speaker is not None:
+            _require(
+                isinstance(speaker, str) and speaker in element_ids,
+                f"scene {scene_id}: subtitle speaker {speaker!r} does not exist",
+            )
+        for field_name in ("voice", "rate", "volume", "pitch"):
+            if field_name in subtitle:
+                _require(
+                    isinstance(subtitle[field_name], str) and subtitle[field_name],
+                    f"scene {scene_id}: subtitle {field_name} must be a non-empty string",
+                )
 
 
 def load_storyboard(path: str | Path) -> Storyboard:
@@ -182,6 +203,26 @@ def load_storyboard(path: str | Path) -> Storyboard:
 
     raw_settings = data.get("settings", {})
     _require(isinstance(raw_settings, dict), "settings must be an object")
+    raw_tts = raw_settings.get("tts", {})
+    _require(isinstance(raw_tts, dict), "settings.tts must be an object")
+    tts_defaults = {
+        "voice": "vi-VN-HoaiMyNeural",
+        "rate": "+0%",
+        "volume": "+0%",
+        "pitch": "+0Hz",
+    }
+    for field_name, default in tts_defaults.items():
+        value = raw_tts.get(field_name, default)
+        _require(
+            isinstance(value, str) and value,
+            f"settings.tts.{field_name} must be a non-empty string",
+        )
+    tts = TTSSettings(
+        voice=raw_tts.get("voice", tts_defaults["voice"]),
+        rate=raw_tts.get("rate", tts_defaults["rate"]),
+        volume=raw_tts.get("volume", tts_defaults["volume"]),
+        pitch=raw_tts.get("pitch", tts_defaults["pitch"]),
+    )
     settings = RenderSettings(
         width=int(raw_settings.get("width", 1280)),
         height=int(raw_settings.get("height", 720)),
@@ -190,6 +231,7 @@ def load_storyboard(path: str | Path) -> Storyboard:
         background_color=str(raw_settings.get("background_color", "#111827")),
         samples=int(raw_settings.get("samples", 16)),
         asset_library=str(raw_settings.get("asset_library", "assets")),
+        tts=tts,
     )
     _require(settings.width > 0 and settings.height > 0, "render dimensions must be positive")
     _require(1 <= settings.fps <= 120, "fps must be between 1 and 120")

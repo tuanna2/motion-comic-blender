@@ -2,7 +2,9 @@
 
 JSON-driven 2D/2.5D motion-comic renderer for Blender. The engine builds a scene from reusable assets, applies deterministic motion presets, and renders an MP4 without an AI video model.
 
-The MVP includes a 10-second fishing demo with procedural placeholder art, subtitles, camera motion, and reusable animations. Transparent PNG assets are supported for replacing the placeholders later.
+The MVP includes a 10-second fishing demo with procedural placeholder art,
+Vietnamese speech, word-timed lip sync, subtitles, camera motion, and reusable
+animations. Transparent PNG assets are supported for replacing the placeholders later.
 
 ## What is included
 
@@ -18,7 +20,8 @@ The MVP includes a 10-second fishing demo with procedural placeholder art, subti
 - Motion presets: `enter`, `idle`, `talk`, `walk`, `wave`, `look`, `nod`, `pull_rod`, `fish_jump`, `shake`, `impact`, `fall`
 - Camera presets: `camera_zoom`, `camera_pan`
 - Timed subtitles
-- Direct H.264 MP4 output
+- Cached Edge-TTS voice generation and WordBoundary-driven mouth animation
+- FFmpeg audio timeline mixing and H.264/AAC MP4 output
 - Pure-Python validation and unit tests
 
 ## Requirements
@@ -26,17 +29,22 @@ The MVP includes a 10-second fishing demo with procedural placeholder art, subti
 - macOS, Linux, or Windows
 - Blender 4.2 or newer (including Blender 5.x)
 - FFmpeg CLI (`brew install ffmpeg` on macOS)
-- Python 3.11+ only for validation/tests; Blender supplies Python for rendering
+- Python 3.11+ for validation, asset generation, and Edge-TTS
+- Internet access when synthesizing uncached dialogue
 
-No pip packages are required for the MVP. Blender renders lossless PNG frames,
-then the external FFmpeg CLI encodes them to H.264 MP4. This works with Blender
-5.x builds that do not expose `FFMPEG` as a direct render format.
+Blender renders lossless PNG frames, then the external FFmpeg CLI encodes them
+to H.264/AAC MP4. This works with Blender 5.x builds that do not expose
+`FFMPEG` as a direct render format. Edge-TTS runs in the system Python before
+Blender, so no package needs to be installed into Blender's bundled Python.
 
 ## Render the demo on macOS
 
 ```bash
 git clone https://github.com/tuanna2/motion-comic-blender.git
 cd motion-comic-blender
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -e '.[tts]'
 chmod +x scripts/render_demo.sh
 ./scripts/render_demo.sh
 ```
@@ -46,6 +54,8 @@ Output:
 ```text
 output/fishing-demo.mp4
 output/fishing-demo.blend
+output/fishing-voice/voice.wav
+output/fishing-voice/lip_sync.json
 ```
 
 If Blender is installed elsewhere:
@@ -57,11 +67,19 @@ BLENDER_BIN=/path/to/blender ./scripts/render_demo.sh
 Equivalent command:
 
 ```bash
+python3 scripts/generate_demo_assets.py
+python3 scripts/generate_voice.py \
+  examples/fishing/storyboard.json \
+  --output-dir output/fishing-voice \
+  --cache-dir output/.voice-cache
+
 /Applications/Blender.app/Contents/MacOS/Blender -b \
   -P scripts/render_storyboard.py \
   -- examples/fishing/storyboard.json \
   --output output/fishing-demo.mp4 \
-  --save-blend output/fishing-demo.blend
+  --save-blend output/fishing-demo.blend \
+  --audio output/fishing-voice/voice.wav \
+  --lip-sync output/fishing-voice/lip_sync.json
 ```
 
 Add `--keep-frames` if you want to retain the intermediate PNG sequence. By
@@ -265,6 +283,55 @@ Storyboard motions stay semantic and do not contain per-frame coordinates:
 shoulder, elbow, rod, and root translation. Custom motions can also target a
 registered controller such as `angler.head` from Python.
 
+## Edge-TTS and lip sync
+
+Global voice defaults live in `settings.tts`. Every spoken subtitle declares
+the element ID that owns the mouth with `speaker`. A subtitle may override any
+voice setting, which supports multiple characters in the same scene.
+
+```json
+{
+  "settings": {
+    "tts": {
+      "voice": "vi-VN-HoaiMyNeural",
+      "rate": "+8%",
+      "volume": "+0%",
+      "pitch": "+0Hz"
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene_1",
+      "duration": 4,
+      "elements": [{"id": "angler", "kind": "character", "asset_ref": "char_angler@1"}],
+      "subtitles": [
+        {
+          "start": 1,
+          "end": 3,
+          "text": "Hôm nay nhất định phải bắt được cá lớn!",
+          "speaker": "angler"
+        }
+      ]
+    }
+  ]
+}
+```
+
+`generate_voice.py` streams audio and `WordBoundary` metadata from Edge-TTS.
+Each line is cached using a hash of its text, voice, rate, volume, and pitch.
+It then produces:
+
+- `voice.wav`: all lines positioned on the complete episode timeline
+- `lip_sync.json`: mouth-open intervals grouped by scene and speaker
+
+Blender consumes only the local sidecar. It swaps `mouth_closed` and
+`mouth_open` at the generated frames; characters with one mouth sprite use a
+scale-animation fallback. FFmpeg finally muxes `voice.wav` into the rendered
+MP4 as AAC. The old `talk` motion remains available for silent previews.
+
+Run `generate_voice.py --force` to bypass the cache. Change only one dialogue
+line and only that line is synthesized again.
+
 ```json
 {
   "version": "1.0",
@@ -313,11 +380,14 @@ motion_comic/              Blender/Python engine
   builder.py               Timeline and render builder
   motions.py               Reusable animation presets
   rig.py                   Rig hierarchy validation and ordering
+  voice.py                 TTS jobs, cache keys, word cues, and audio mixing
+  lipsync.py               Lip-sync sidecar validation and frame conversion
   registry.py              Versioned asset manifest discovery
   layout.py                Slot, scene-anchor, and auto-layout resolution
   schema.py                JSON validation
 examples/fishing/          Runnable fishing demo
 scripts/render_storyboard.py
+scripts/generate_voice.py
 scripts/check_project.py
 tests/                     Blender-independent unit tests
 ```
@@ -325,17 +395,20 @@ tests/                     Blender-independent unit tests
 ## MVP limitations
 
 - Generated layered art is intentionally simple and exists only to verify the pipeline.
-- TTS, audio mixing, lip-sync analysis, IK controls, mesh deformation, and UI editing are planned next.
+- Lip sync currently uses open/closed mouth sprites at word timing, not phoneme-specific visemes.
+- Edge-TTS is an unofficial online integration and may change or become unavailable; cached lines remain renderable.
+- For a commercial production dependency, evaluate a provider with explicit service terms and availability guarantees.
+- IK controls, mesh deformation, sound effects, music ducking, and UI editing are planned next.
 - Motions that animate the same property at overlapping times can overwrite one another; keep them sequential unless the overlap is intentional.
 - Blender must include H.264/FFmpeg support, as standard Blender builds do.
 
 ## Next milestones
 
-1. Edge-TTS voice generation and automatic audio placement
-2. Audio-driven mouth viseme timing
-3. Optional hand/foot IK and reusable pose library
-4. Batch episode queue, cache, and retries
-5. Web storyboard and pose editor
+1. Phoneme-specific visemes and reusable facial pose sets
+2. Sound effects, music tracks, loudness normalization, and ducking
+3. Optional hand/foot IK and reusable body pose library
+4. Batch episode queue, render cache, and retries
+5. Web storyboard, dialogue, and pose editor
 
 ## License
 

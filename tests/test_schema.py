@@ -39,6 +39,44 @@ class SchemaTests(unittest.TestCase):
     def test_part_level_rig_presets_are_supported(self):
         self.assertTrue({"walk", "wave", "look", "nod", "pull_rod"} <= SUPPORTED_PRESETS)
 
+    def test_loads_tts_defaults_and_subtitle_speaker(self):
+        path = self.write_storyboard(
+            {
+                "version": "1.0",
+                "settings": {"tts": {"voice": "vi-VN-HoaiMyNeural", "rate": "+8%"}},
+                "scenes": [
+                    {
+                        "id": "one",
+                        "duration": 2,
+                        "elements": [{"id": "hero", "kind": "disc"}],
+                        "subtitles": [
+                            {"text": "Xin chào", "speaker": "hero", "start": 0, "end": 1}
+                        ],
+                    }
+                ],
+            }
+        )
+        storyboard = load_storyboard(path)
+        self.assertEqual(storyboard.settings.tts.voice, "vi-VN-HoaiMyNeural")
+        self.assertEqual(storyboard.settings.tts.rate, "+8%")
+
+    def test_rejects_unknown_subtitle_speaker(self):
+        path = self.write_storyboard(
+            {
+                "version": "1.0",
+                "scenes": [
+                    {
+                        "id": "one",
+                        "duration": 1,
+                        "elements": [],
+                        "subtitles": [{"text": "Hello", "speaker": "missing"}],
+                    }
+                ],
+            }
+        )
+        with self.assertRaisesRegex(StoryboardError, "subtitle speaker 'missing' does not exist"):
+            load_storyboard(path)
+
     def test_rejects_unknown_target(self):
         path = self.write_storyboard(
             {

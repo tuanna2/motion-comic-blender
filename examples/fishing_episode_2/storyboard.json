@@ -8,7 +8,13 @@
     "world_height": 9,
     "background_color": "#0f172a",
     "samples": 16,
-    "asset_library": "../../assets"
+    "asset_library": "../../assets",
+    "tts": {
+      "voice": "vi-VN-HoaiMyNeural",
+      "rate": "+4%",
+      "volume": "+0%",
+      "pitch": "+0Hz"
+    }
   },
   "scenes": [
     {
@@ -74,13 +80,6 @@
         },
         {
           "target": "angler",
-          "preset": "talk",
-          "start": 1.0,
-          "end": 3.0,
-          "params": {"pulses": 10}
-        },
-        {
-          "target": "angler",
           "preset": "nod",
           "start": 2.0,
           "end": 3.0,
@@ -112,7 +111,8 @@
         {
           "start": 1.0,
           "end": 3.2,
-          "text": "Sao mặt hồ hôm nay đáng sợ thế?"
+          "text": "Sao mặt hồ hôm nay đáng sợ thế?",
+          "speaker": "angler"
         }
       ]
     }

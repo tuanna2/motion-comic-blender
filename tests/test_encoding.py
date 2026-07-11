@@ -18,6 +18,19 @@ class EncodingTests(unittest.TestCase):
         self.assertIn("/tmp/frames/frame_%04d.png", command)
         self.assertEqual(command[-1], "/tmp/demo.mp4")
 
+    def test_ffmpeg_command_muxes_optional_audio(self):
+        command = ffmpeg_command(
+            "ffmpeg",
+            Path("/tmp/frames/frame_%04d.png"),
+            30,
+            Path("/tmp/demo.mp4"),
+            audio_path=Path("/tmp/voice.wav"),
+        )
+        self.assertIn("/tmp/voice.wav", command)
+        self.assertIn("aac", command)
+        self.assertIn("192k", command)
+        self.assertIn("-shortest", command)
+
 
 if __name__ == "__main__":
     unittest.main()
