@@ -8,6 +8,7 @@ from typing import Any
 import bpy
 
 from .assets import AssetBundle, create_element, create_flat_object, create_text, hex_color
+from .easing import choose_render_engine
 from .motions import apply_motion
 from .schema import Storyboard, load_storyboard
 
@@ -24,7 +25,9 @@ def reset_blender() -> None:
 def setup_render(storyboard: Storyboard, output_path: Path):
     scene = bpy.context.scene
     settings = storyboard.settings
-    scene.render.engine = "BLENDER_EEVEE_NEXT"
+    engine_items = scene.render.bl_rna.properties["engine"].enum_items
+    available_engines = {item.identifier for item in engine_items}
+    scene.render.engine = choose_render_engine(available_engines)
     scene.render.resolution_x = settings.width
     scene.render.resolution_y = settings.height
     scene.render.resolution_percentage = 100
@@ -166,4 +169,3 @@ def render_storyboard(
     if render:
         bpy.ops.render.render(animation=True)
     return storyboard
-

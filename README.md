@@ -19,7 +19,7 @@ The MVP includes a 10-second fishing demo with procedural placeholder art, subti
 ## Requirements
 
 - macOS, Linux, or Windows
-- Blender 4.2 or newer
+- Blender 4.2 or newer (including Blender 5.x)
 - Python 3.11+ only for validation/tests; Blender supplies Python for rendering
 
 No pip packages are required for the MVP.
@@ -156,4 +156,3 @@ tests/                     Blender-independent unit tests
 ## License
 
 MIT
-

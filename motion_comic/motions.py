@@ -21,7 +21,13 @@ def _sample_frames(start: int, end: int, count: int = 12) -> list[int]:
 def _set_linear(obj) -> None:
     if not obj.animation_data or not obj.animation_data.action:
         return
-    for fcurve in obj.animation_data.action.fcurves:
+    # Blender 5 introduced layered Actions. Legacy actions expose ``fcurves``
+    # directly; layered actions do not. Keyframes still render correctly when
+    # this optional interpolation pass is skipped.
+    fcurves = getattr(obj.animation_data.action, "fcurves", None)
+    if fcurves is None:
+        return
+    for fcurve in fcurves:
         for point in fcurve.keyframe_points:
             point.interpolation = "LINEAR"
 
@@ -166,4 +172,3 @@ PRESETS = {
 
 def apply_motion(preset: str, obj, start: int, end: int, params: dict[str, Any], **context) -> None:
     PRESETS[preset](obj, start, end, params, **context)
-
