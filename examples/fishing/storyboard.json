@@ -1,0 +1,199 @@
+{
+  "version": "1.0",
+  "title": "Fishing Motion Comic MVP",
+  "settings": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30,
+    "world_height": 9,
+    "background_color": "#0f172a",
+    "samples": 16
+  },
+  "scenes": [
+    {
+      "id": "river_intro",
+      "duration": 4.0,
+      "background_color": "#7dd3fc",
+      "elements": [
+        {
+          "id": "grass",
+          "kind": "rectangle",
+          "x": 0,
+          "y": -3.35,
+          "z": 0,
+          "width": 16,
+          "height": 2.3,
+          "color": "#65a30d"
+        },
+        {
+          "id": "river",
+          "kind": "rectangle",
+          "x": 3.5,
+          "y": -2.15,
+          "z": 0.5,
+          "width": 9,
+          "height": 1.7,
+          "color": "#0284c7"
+        },
+        {
+          "id": "angler",
+          "kind": "fishing_character",
+          "x": -3.2,
+          "y": -1.15,
+          "z": 2,
+          "scale": 0.9,
+          "color": "#ef4444"
+        }
+      ],
+      "motions": [
+        {
+          "target": "angler",
+          "preset": "enter",
+          "start": 0,
+          "end": 0.8,
+          "params": {"from_x": -4.5}
+        },
+        {
+          "target": "angler",
+          "preset": "talk",
+          "start": 1.0,
+          "end": 3.2,
+          "params": {"pulses": 12, "open": 3.2}
+        },
+        {
+          "target": "angler",
+          "preset": "idle",
+          "start": 0.8,
+          "end": 4.0,
+          "params": {"cycles": 3, "amplitude": 0.06}
+        },
+        {
+          "target": "camera",
+          "preset": "camera_zoom",
+          "start": 0,
+          "end": 4.0,
+          "params": {"from": 10.2, "to": 9.0}
+        }
+      ],
+      "subtitles": [
+        {
+          "start": 1.0,
+          "end": 3.4,
+          "text": "Hôm nay nhất định phải bắt được cá lớn!"
+        }
+      ]
+    },
+    {
+      "id": "big_catch",
+      "duration": 6.0,
+      "background_color": "#60a5fa",
+      "elements": [
+        {
+          "id": "grass",
+          "kind": "rectangle",
+          "x": 0,
+          "y": -3.35,
+          "z": 0,
+          "width": 16,
+          "height": 2.3,
+          "color": "#4d7c0f"
+        },
+        {
+          "id": "river",
+          "kind": "rectangle",
+          "x": 3.5,
+          "y": -2.15,
+          "z": 0.5,
+          "width": 9,
+          "height": 1.7,
+          "color": "#0369a1"
+        },
+        {
+          "id": "angler",
+          "kind": "fishing_character",
+          "x": -2.8,
+          "y": -1.15,
+          "z": 2,
+          "scale": 0.9,
+          "color": "#ef4444"
+        },
+        {
+          "id": "monster_fish",
+          "kind": "fish",
+          "x": 5.2,
+          "y": -2.3,
+          "z": 3,
+          "scale": 1.25,
+          "color": "#f59e0b"
+        },
+        {
+          "id": "impact_text",
+          "kind": "text",
+          "x": 2.5,
+          "y": 2.5,
+          "z": 8,
+          "size": 1.1,
+          "text": "CÁ KHỔNG LỒ!",
+          "color": "#fef08a"
+        }
+      ],
+      "motions": [
+        {
+          "target": "angler",
+          "preset": "pull_rod",
+          "start": 0.3,
+          "end": 2.4,
+          "params": {"pull_degrees": 25, "rod_degrees": 42}
+        },
+        {
+          "target": "angler",
+          "preset": "shake",
+          "start": 0.5,
+          "end": 2.4,
+          "params": {"amplitude": 0.09, "step_frames": 2}
+        },
+        {
+          "target": "monster_fish",
+          "preset": "fish_jump",
+          "start": 1.2,
+          "end": 4.5,
+          "params": {"distance": -5.0, "height": 4.1, "turns": 0.8}
+        },
+        {
+          "target": "impact_text",
+          "preset": "impact",
+          "start": 2.2,
+          "end": 3.0,
+          "params": {"punch": 1.5}
+        },
+        {
+          "target": "camera",
+          "preset": "shake",
+          "start": 2.0,
+          "end": 3.0,
+          "params": {"amplitude": 0.16, "step_frames": 2}
+        },
+        {
+          "target": "angler",
+          "preset": "fall",
+          "start": 4.6,
+          "end": 5.8,
+          "params": {"x": -1.0, "y": -0.8, "degrees": 72}
+        }
+      ],
+      "subtitles": [
+        {
+          "start": 0.3,
+          "end": 2.2,
+          "text": "Cắn câu rồi... kéo!"
+        },
+        {
+          "start": 3.0,
+          "end": 5.5,
+          "text": "Khoan, con cá này lớn quá!"
+        }
+      ]
+    }
+  ]
+}
+
