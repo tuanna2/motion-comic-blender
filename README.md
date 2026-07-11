@@ -20,9 +20,12 @@ The MVP includes a 10-second fishing demo with procedural placeholder art, subti
 
 - macOS, Linux, or Windows
 - Blender 4.2 or newer (including Blender 5.x)
+- FFmpeg CLI (`brew install ffmpeg` on macOS)
 - Python 3.11+ only for validation/tests; Blender supplies Python for rendering
 
-No pip packages are required for the MVP.
+No pip packages are required for the MVP. Blender renders lossless PNG frames,
+then the external FFmpeg CLI encodes them to H.264 MP4. This works with Blender
+5.x builds that do not expose `FFMPEG` as a direct render format.
 
 ## Render the demo on macOS
 
@@ -55,6 +58,10 @@ Equivalent command:
   --output output/fishing-demo.mp4 \
   --save-blend output/fishing-demo.blend
 ```
+
+Add `--keep-frames` if you want to retain the intermediate PNG sequence. By
+default it is deleted after FFmpeg successfully creates the MP4. If encoding
+fails, the frames are kept for recovery.
 
 To build a `.blend` file without rendering the MP4:
 

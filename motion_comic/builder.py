@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +10,7 @@ import bpy
 
 from .assets import AssetBundle, create_element, create_flat_object, create_text, hex_color
 from .easing import choose_render_engine
+from .encoding import encode_png_sequence
 from .motions import apply_motion
 from .schema import Storyboard, load_storyboard
 
@@ -32,12 +34,14 @@ def setup_render(storyboard: Storyboard, output_path: Path):
     scene.render.resolution_y = settings.height
     scene.render.resolution_percentage = 100
     scene.render.fps = settings.fps
-    scene.render.image_settings.file_format = "FFMPEG"
-    scene.render.ffmpeg.format = "MPEG4"
-    scene.render.ffmpeg.codec = "H264"
-    scene.render.ffmpeg.constant_rate_factor = "MEDIUM"
-    scene.render.ffmpeg.audio_codec = "AAC"
-    scene.render.filepath = str(output_path)
+    # Render a lossless image sequence on every Blender version. Some Blender
+    # 5.x distributions no longer expose FFMPEG as an image_settings format.
+    # Encoding externally is also resumable and avoids losing the whole video
+    # when animation rendering is interrupted.
+    frames_dir = output_path.parent / f".{output_path.stem}_frames"
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.image_settings.color_mode = "RGBA"
+    scene.render.filepath = str(frames_dir / "frame_")
     scene.frame_start = 1
     scene.frame_end = storyboard.total_frames
     scene.render.film_transparent = False
@@ -52,7 +56,7 @@ def setup_render(storyboard: Storyboard, output_path: Path):
     camera.data.type = "ORTHO"
     camera.data.ortho_scale = settings.world_height
     scene.camera = camera
-    return scene, camera
+    return scene, camera, frames_dir
 
 
 def _keyframe_visibility(obj, frame: int, visible: bool) -> None:
@@ -99,7 +103,7 @@ def _create_subtitle(scene_id: str, index: int, subtitle: dict[str, Any], world_
 
 def build_storyboard(storyboard: Storyboard, output_path: Path):
     reset_blender()
-    scene, camera = setup_render(storyboard, output_path)
+    scene, camera, frames_dir = setup_render(storyboard, output_path)
     aspect = storyboard.settings.width / storyboard.settings.height
     world_height = storyboard.settings.world_height
     world_width = world_height * aspect
@@ -148,7 +152,7 @@ def build_storyboard(storyboard: Storyboard, output_path: Path):
 
     scene.frame_end = current_frame - 1
     scene.frame_set(1)
-    return scene
+    return scene, frames_dir
 
 
 def render_storyboard(
@@ -157,15 +161,22 @@ def render_storyboard(
     *,
     save_blend: str | Path | None = None,
     render: bool = True,
+    keep_frames: bool = False,
 ) -> Storyboard:
     storyboard = load_storyboard(storyboard_path)
     resolved_output = Path(output_path).expanduser().resolve()
     resolved_output.parent.mkdir(parents=True, exist_ok=True)
-    build_storyboard(storyboard, resolved_output)
+    _scene, frames_dir = build_storyboard(storyboard, resolved_output)
     if save_blend:
         blend_path = Path(save_blend).expanduser().resolve()
         blend_path.parent.mkdir(parents=True, exist_ok=True)
         bpy.ops.wm.save_as_mainfile(filepath=str(blend_path))
     if render:
+        if frames_dir.exists():
+            shutil.rmtree(frames_dir)
+        frames_dir.mkdir(parents=True, exist_ok=True)
         bpy.ops.render.render(animation=True)
+        encode_png_sequence(frames_dir, storyboard.settings.fps, resolved_output)
+        if not keep_frames:
+            shutil.rmtree(frames_dir)
     return storyboard
