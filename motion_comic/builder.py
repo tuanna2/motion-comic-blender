@@ -107,7 +107,7 @@ def _apply_attachments(
             raise ValueError(f"attachment offset for {element_id!r} must contain x and y")
         anchor_x, anchor_y = target_bundle.anchors[anchor_id]
         bundle = bundles[element_id]
-        bundle.root.parent = target_bundle.root
+        bundle.root.parent = target_bundle.anchor_parents.get(anchor_id, target_bundle.root)
         bundle.root.location = (
             anchor_x + float(offset[0]),
             anchor_y + float(offset[1]),

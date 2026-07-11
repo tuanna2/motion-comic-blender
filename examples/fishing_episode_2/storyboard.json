@@ -60,10 +60,17 @@
       "motions": [
         {
           "target": "angler",
-          "preset": "enter",
+          "preset": "walk",
           "start": 0,
-          "end": 0.8,
-          "params": {"from_x": -4}
+          "end": 1.0,
+          "params": {"from_x": -4, "cycles": 3, "stride_degrees": 24}
+        },
+        {
+          "target": "angler",
+          "preset": "look",
+          "start": 0.9,
+          "end": 1.9,
+          "params": {"degrees": -18, "return": true}
         },
         {
           "target": "angler",
@@ -71,6 +78,20 @@
           "start": 1.0,
           "end": 3.0,
           "params": {"pulses": 10}
+        },
+        {
+          "target": "angler",
+          "preset": "nod",
+          "start": 2.0,
+          "end": 3.0,
+          "params": {"cycles": 2, "degrees": 8}
+        },
+        {
+          "target": "angler",
+          "preset": "wave",
+          "start": 3.1,
+          "end": 4.8,
+          "params": {"cycles": 3, "amplitude_degrees": 24}
         },
         {
           "target": "angler",

@@ -41,8 +41,10 @@ def main() -> int:
     # A fixed hair silhouette is baked into the reusable head asset.
     draw_ellipse(head, 110, 38, 94, 35, INK)
 
-    arm = outlined_ellipse(260, 76, SKIN, border=6)
-    leg = outlined_ellipse(72, 220, (30, 41, 59, 255), border=6)
+    arm_upper = outlined_ellipse(170, 62, SKIN, border=6)
+    forearm = outlined_ellipse(170, 62, SKIN, border=6)
+    leg_upper = outlined_ellipse(74, 140, (30, 41, 59, 255), border=6)
+    leg_lower = outlined_ellipse(74, 140, (30, 41, 59, 255), border=6)
     rod = canvas(520, 24)
     draw_rectangle(rod, 2, 5, 518, 19, (66, 32, 6, 255))
 
@@ -69,9 +71,12 @@ def main() -> int:
     assets = {
         "body.png": body,
         "head.png": head,
-        "arm_front.png": arm,
-        "leg_left.png": leg,
-        "leg_right.png": leg,
+        "arm_upper.png": arm_upper,
+        "forearm.png": forearm,
+        "leg_left_upper.png": leg_upper,
+        "leg_left_lower.png": leg_lower,
+        "leg_right_upper.png": leg_upper,
+        "leg_right_lower.png": leg_lower,
         "rod.png": rod,
         "eyes_normal.png": eyes_normal,
         "eyes_angry.png": eyes_angry,

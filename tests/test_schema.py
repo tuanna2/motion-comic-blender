@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from motion_comic.schema import StoryboardError, load_storyboard
+from motion_comic.schema import SUPPORTED_PRESETS, StoryboardError, load_storyboard
 
 
 class SchemaTests(unittest.TestCase):
@@ -35,6 +35,9 @@ class SchemaTests(unittest.TestCase):
         storyboard = load_storyboard(path)
         self.assertEqual(storyboard.total_frames, 48)
         self.assertEqual(storyboard.duration_seconds, 2)
+
+    def test_part_level_rig_presets_are_supported(self):
+        self.assertTrue({"walk", "wave", "look", "nod", "pull_rod"} <= SUPPORTED_PRESETS)
 
     def test_rejects_unknown_target(self):
         path = self.write_storyboard(

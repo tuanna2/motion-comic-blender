@@ -32,6 +32,15 @@ def _set_linear(obj) -> None:
             point.interpolation = "LINEAR"
 
 
+def _rig_part(registry, target: str, part_id: str):
+    return registry.get(f"{target}.{part_id}")
+
+
+def _keyframe_rotation(obj, frame: int) -> None:
+    if obj is not None:
+        _keyframe(obj, "rotation_euler", frame)
+
+
 def enter(obj, start: int, end: int, params: dict[str, Any], **_) -> None:
     original = obj.location.copy()
     obj.location.x = original.x + float(params.get("from_x", -5.0))
@@ -81,27 +90,164 @@ def talk(obj, start: int, end: int, params: dict[str, Any], *, registry, target:
 
 
 def pull_rod(obj, start: int, end: int, params: dict[str, Any], *, registry, target: str, **_) -> None:
-    base_rotation = obj.rotation_euler.z
     base_location = obj.location.copy()
-    rod = registry.get(f"{target}.rod")
-    rod_rotation = rod.rotation_euler.z if rod else 0.0
+    body = _rig_part(registry, target, "body")
+    if body is None:
+        body = obj
+    head = _rig_part(registry, target, "head")
+    arm = _rig_part(registry, target, "arm_upper")
+    if arm is None:
+        arm = _rig_part(registry, target, "arm_front")
+    forearm = _rig_part(registry, target, "forearm")
+    rod = _rig_part(registry, target, "rod")
+    controllers = [part for part in (body, head, arm, forearm, rod) if part is not None]
+    base_rotations = {part.name: part.rotation_euler.z for part in controllers}
     middle = round(start + (end - start) * 0.55)
-    obj.rotation_euler.z = base_rotation + math.radians(float(params.get("prepare_degrees", -8)))
-    _keyframe(obj, "rotation_euler", start)
-    obj.rotation_euler.z = base_rotation + math.radians(float(params.get("pull_degrees", 22)))
-    obj.location.x = base_location.x - float(params.get("pull_back", 0.45))
-    _keyframe(obj, "rotation_euler", middle)
-    _keyframe(obj, "location", middle)
-    if rod:
-        rod.rotation_euler.z = rod_rotation + math.radians(float(params.get("rod_degrees", 32)))
-        _keyframe(rod, "rotation_euler", middle)
-    obj.rotation_euler.z = base_rotation
+
     obj.location = base_location
-    _keyframe(obj, "rotation_euler", end)
+    _keyframe(obj, "location", start)
+    body.rotation_euler.z = base_rotations[body.name] + math.radians(
+        float(params.get("prepare_degrees", -8))
+    )
+    for part in controllers:
+        _keyframe_rotation(part, start)
+
+    pull_degrees = float(params.get("pull_degrees", 22))
+    body.rotation_euler.z = base_rotations[body.name] + math.radians(pull_degrees)
+    obj.location.x = base_location.x - float(params.get("pull_back", 0.45))
+    _keyframe(obj, "location", middle)
+    if head is not None:
+        head.rotation_euler.z = base_rotations[head.name] - math.radians(pull_degrees * 0.45)
+    if arm is not None:
+        arm.rotation_euler.z = base_rotations[arm.name] + math.radians(
+            float(params.get("shoulder_degrees", 34))
+        )
+    if forearm is not None:
+        forearm.rotation_euler.z = base_rotations[forearm.name] + math.radians(
+            float(params.get("elbow_degrees", 58))
+        )
+    if rod is not None:
+        rod.rotation_euler.z = base_rotations[rod.name] + math.radians(
+            float(params.get("rod_degrees", 32))
+        )
+    for part in controllers:
+        _keyframe_rotation(part, middle)
+
+    obj.location = base_location
     _keyframe(obj, "location", end)
-    if rod:
-        rod.rotation_euler.z = rod_rotation
-        _keyframe(rod, "rotation_euler", end)
+    for part in controllers:
+        part.rotation_euler.z = base_rotations[part.name]
+        _keyframe_rotation(part, end)
+
+
+def walk(obj, start: int, end: int, params: dict[str, Any], *, registry, target: str, **_) -> None:
+    """Move the root while swinging hierarchical arm and leg controllers."""
+    base_location = obj.location.copy()
+    from_x = params.get("from_x")
+    if from_x is not None:
+        start_x = base_location.x + float(from_x)
+        end_x = base_location.x
+    else:
+        start_x = base_location.x
+        end_x = base_location.x + float(params.get("distance", 2.0))
+    cycles = max(1, int(params.get("cycles", 3)))
+    stride = math.radians(float(params.get("stride_degrees", 24)))
+    knee_bend = math.radians(float(params.get("knee_degrees", 18)))
+    bob = float(params.get("bob", 0.06))
+
+    left_upper = _rig_part(registry, target, "leg_left_upper")
+    left_lower = _rig_part(registry, target, "leg_left_lower")
+    right_upper = _rig_part(registry, target, "leg_right_upper")
+    right_lower = _rig_part(registry, target, "leg_right_lower")
+    arm = _rig_part(registry, target, "arm_upper")
+    controllers = [
+        part for part in (left_upper, left_lower, right_upper, right_lower, arm) if part is not None
+    ]
+    base_rotations = {part.name: part.rotation_euler.z for part in controllers}
+
+    sample_count = cycles * 8
+    for frame in _sample_frames(start, end, sample_count):
+        progress = (frame - start) / max(1, end - start)
+        phase = math.sin(progress * math.tau * cycles)
+        obj.location.x = start_x + (end_x - start_x) * ease_in_out(progress)
+        obj.location.y = base_location.y + abs(phase) * bob
+        _keyframe(obj, "location", frame)
+        if left_upper is not None:
+            left_upper.rotation_euler.z = base_rotations[left_upper.name] + stride * phase
+        if right_upper is not None:
+            right_upper.rotation_euler.z = base_rotations[right_upper.name] - stride * phase
+        if left_lower is not None:
+            left_lower.rotation_euler.z = base_rotations[left_lower.name] + knee_bend * max(0.0, -phase)
+        if right_lower is not None:
+            right_lower.rotation_euler.z = base_rotations[right_lower.name] + knee_bend * max(0.0, phase)
+        if arm is not None:
+            arm.rotation_euler.z = base_rotations[arm.name] - stride * phase * 0.55
+        for part in controllers:
+            _keyframe_rotation(part, frame)
+
+    obj.location.x = end_x
+    obj.location.y = base_location.y
+    for part in controllers:
+        part.rotation_euler.z = base_rotations[part.name]
+    _set_linear(obj)
+    for part in controllers:
+        _set_linear(part)
+
+
+def wave(obj, start: int, end: int, params: dict[str, Any], *, registry, target: str, **_) -> None:
+    """Raise the arm at the shoulder and wave from the elbow."""
+    arm = _rig_part(registry, target, "arm_upper")
+    forearm = _rig_part(registry, target, "forearm")
+    if arm is None and forearm is None:
+        return
+    cycles = max(1, int(params.get("cycles", 3)))
+    lift = math.radians(float(params.get("lift_degrees", 58)))
+    bend = math.radians(float(params.get("bend_degrees", 45)))
+    amplitude = math.radians(float(params.get("amplitude_degrees", 22)))
+    base_arm = arm.rotation_euler.z if arm is not None else 0.0
+    base_forearm = forearm.rotation_euler.z if forearm is not None else 0.0
+    sample_count = cycles * 8
+    for frame in _sample_frames(start, end, sample_count):
+        progress = (frame - start) / max(1, end - start)
+        envelope = math.sin(math.pi * progress)
+        oscillation = math.sin(progress * math.tau * cycles)
+        if arm is not None:
+            arm.rotation_euler.z = base_arm + lift * envelope
+            _keyframe_rotation(arm, frame)
+        if forearm is not None:
+            forearm.rotation_euler.z = base_forearm + (bend + amplitude * oscillation) * envelope
+            _keyframe_rotation(forearm, frame)
+
+
+def look(obj, start: int, end: int, params: dict[str, Any], *, registry, target: str, **_) -> None:
+    """Turn the head controller, optionally returning to the neutral pose."""
+    head = _rig_part(registry, target, "head")
+    if head is None:
+        return
+    base = head.rotation_euler.z
+    angle = math.radians(float(params.get("degrees", 18)))
+    returns = bool(params.get("return", True))
+    for frame in _sample_frames(start, end, 12):
+        progress = (frame - start) / max(1, end - start)
+        blend = math.sin(math.pi * progress) if returns else ease_in_out(progress)
+        head.rotation_euler.z = base + angle * blend
+        _keyframe_rotation(head, frame)
+
+
+def nod(obj, start: int, end: int, params: dict[str, Any], *, registry, target: str, **_) -> None:
+    """Animate a damped head nod around the neck joint."""
+    head = _rig_part(registry, target, "head")
+    if head is None:
+        return
+    base = head.rotation_euler.z
+    cycles = max(1, int(params.get("cycles", 2)))
+    amplitude = math.radians(float(params.get("degrees", 10)))
+    sample_count = cycles * 8
+    for frame in _sample_frames(start, end, sample_count):
+        progress = (frame - start) / max(1, end - start)
+        envelope = math.sin(math.pi * progress)
+        head.rotation_euler.z = base + math.sin(progress * math.tau * cycles) * amplitude * envelope
+        _keyframe_rotation(head, frame)
 
 
 def fish_jump(obj, start: int, end: int, params: dict[str, Any], **_) -> None:
@@ -176,6 +322,10 @@ PRESETS = {
     "enter": enter,
     "idle": idle,
     "talk": talk,
+    "walk": walk,
+    "wave": wave,
+    "look": look,
+    "nod": nod,
     "pull_rod": pull_rod,
     "fish_jump": fish_jump,
     "shake": shake,

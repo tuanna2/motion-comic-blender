@@ -11,10 +11,11 @@ The MVP includes a 10-second fishing demo with procedural placeholder art, subti
 - Transparent PNG loader with alpha materials
 - Versioned character library with `manifest.json` and `asset_ref`
 - Layered character expressions, anchors, and mouth sprite swapping
+- Hierarchical 2D character rig with head, shoulder, elbow, hip, and knee controllers
 - Reusable scene templates with named slots and automatic collision-safe placement
 - Scene anchors for water/ground positions and prop attachment to character anchors
 - Procedural fishing character and fish for a zero-asset demo
-- Motion presets: `enter`, `idle`, `talk`, `pull_rod`, `fish_jump`, `shake`, `impact`, `fall`
+- Motion presets: `enter`, `idle`, `talk`, `walk`, `wave`, `look`, `nod`, `pull_rod`, `fish_jump`, `shake`, `impact`, `fall`
 - Camera presets: `camera_zoom`, `camera_pan`
 - Timed subtitles
 - Direct H.264 MP4 output
@@ -213,6 +214,57 @@ shake, entrance, and fall automatically.
 Scene layouts live under `assets/scenes/`, props under `assets/props/`, and
 characters under `assets/characters/`. All three use versioned manifests.
 
+## Hierarchical 2D character rig
+
+Each moving PNG part owns a Blender Empty controller. Child controllers use
+coordinates relative to their parent, so rotating a shoulder moves the elbow,
+hand, and fishing rod together; rotating the head also moves its eyes, mouth,
+and attached hat.
+
+```text
+body
+├── head
+├── arm_upper
+│   └── forearm
+│       └── rod
+├── leg_left_upper
+│   └── leg_left_lower
+└── leg_right_upper
+    └── leg_right_lower
+```
+
+A rigged part in the character manifest declares the controller pivot with
+`joint`, the parent controller with `parent`, and its PNG position relative to
+that pivot with `sprite_offset`:
+
+```json
+{
+  "id": "forearm",
+  "asset": "generated/forearm.png",
+  "parent": "arm_upper",
+  "joint": [0.76, 0],
+  "sprite_offset": [0.36, 0],
+  "width": 0.78
+}
+```
+
+Storyboard motions stay semantic and do not contain per-frame coordinates:
+
+```json
+{
+  "target": "angler",
+  "preset": "walk",
+  "start": 0,
+  "end": 1.2,
+  "params": {"from_x": -4, "cycles": 3}
+}
+```
+
+`walk` drives both hip/knee chains, `wave` drives shoulder/elbow, `look` and
+`nod` drive the neck, and `pull_rod` coordinates body lean, head compensation,
+shoulder, elbow, rod, and root translation. Custom motions can also target a
+registered controller such as `angler.head` from Python.
+
 ```json
 {
   "version": "1.0",
@@ -260,6 +312,7 @@ motion_comic/              Blender/Python engine
   assets.py                PNG and procedural object factories
   builder.py               Timeline and render builder
   motions.py               Reusable animation presets
+  rig.py                   Rig hierarchy validation and ordering
   registry.py              Versioned asset manifest discovery
   layout.py                Slot, scene-anchor, and auto-layout resolution
   schema.py                JSON validation
@@ -272,17 +325,17 @@ tests/                     Blender-independent unit tests
 ## MVP limitations
 
 - Generated layered art is intentionally simple and exists only to verify the pipeline.
-- TTS, audio mixing, lip-sync analysis, UI editing, and skeletal character rigs are planned next.
+- TTS, audio mixing, lip-sync analysis, IK controls, mesh deformation, and UI editing are planned next.
 - Motions that animate the same property at overlapping times can overwrite one another; keep them sequential unless the overlap is intentional.
 - Blender must include H.264/FFmpeg support, as standard Blender builds do.
 
 ## Next milestones
 
 1. Edge-TTS voice generation and automatic audio placement
-2. Mouth sprite/viseme switching
-3. Part-level rig controllers for shoulders, elbows, knees, and head turns
-4. Edge-TTS timing and audio-driven mouth switching
-5. Batch episode queue, cache, retries, and web storyboard editor
+2. Audio-driven mouth viseme timing
+3. Optional hand/foot IK and reusable pose library
+4. Batch episode queue, cache, and retries
+5. Web storyboard and pose editor
 
 ## License
 

@@ -10,6 +10,7 @@ from typing import Any
 import bpy
 
 from .registry import AssetRegistry
+from .rig import order_rig_parts, point2
 
 
 def hex_color(value: str) -> tuple[float, float, float, float]:
@@ -143,6 +144,7 @@ class AssetBundle:
     parts: dict[str, Any] = field(default_factory=dict)
     initial_visibility: dict[str, bool] = field(default_factory=dict)
     anchors: dict[str, tuple[float, float]] = field(default_factory=dict)
+    anchor_parents: dict[str, Any] = field(default_factory=dict)
 
 
 def _parent(child, parent, location) -> None:
@@ -245,38 +247,61 @@ def create_layered_character(
 
     renderables: list[Any] = []
     parts: dict[str, Any] = {}
+    controllers: dict[str, Any] = {}
     initial_visibility: dict[str, bool] = {}
-    for part in part_definitions:
+    for part in order_rig_parts(part_definitions):
         if not isinstance(part, dict) or not isinstance(part.get("id"), str):
             raise ValueError(f"invalid character part in {manifest.path}")
         part_id = str(part["id"])
         asset = part.get("asset")
         if not isinstance(asset, str):
             raise ValueError(f"part {part_id!r} is missing asset in {manifest.path}")
-        offset = part.get("offset", [0, 0])
-        if not isinstance(offset, list) or len(offset) < 2:
-            raise ValueError(f"part {part_id!r} offset must contain x and y")
+        parent_id = part.get("parent")
+        parent_controller = root if parent_id is None else controllers[str(parent_id)]
         obj = create_image(
-            f"{name}.{part_id}",
+            f"{name}.{part_id}_sprite",
             (manifest.directory / asset).resolve(),
             location=(0, 0, 0),
             width=float(part.get("width", 1.0)),
             height=float(part["height"]) if "height" in part else None,
         )
-        _parent(
-            obj,
-            root,
-            (float(offset[0]), float(offset[1]), float(part.get("z", 0))),
-        )
-        obj.rotation_euler.z = math.radians(float(part.get("rotation", 0)))
+        joint = part.get("joint")
+        if joint is not None:
+            joint_x, joint_y = point2(joint, f"part {part_id!r} joint")
+            controller = bpy.data.objects.new(f"{name}.{part_id}_ctrl", None)
+            bpy.context.scene.collection.objects.link(controller)
+            controller.empty_display_type = "CIRCLE"
+            controller.empty_display_size = 0.12
+            controller["motion_comic_part"] = part_id
+            _parent(controller, parent_controller, (joint_x, joint_y, 0))
+            controller.rotation_euler.z = math.radians(float(part.get("rotation", 0)))
+            sprite_offset = part.get("sprite_offset", part.get("offset", [0, 0]))
+            offset_x, offset_y = point2(sprite_offset, f"part {part_id!r} sprite_offset")
+            _parent(obj, controller, (offset_x, offset_y, float(part.get("z", 0))))
+            controllers[part_id] = controller
+            parts[part_id] = controller
+            parts[f"{part_id}_sprite"] = obj
+        else:
+            offset_x, offset_y = point2(part.get("offset", [0, 0]), f"part {part_id!r} offset")
+            _parent(obj, parent_controller, (offset_x, offset_y, float(part.get("z", 0))))
+            obj.rotation_euler.z = math.radians(float(part.get("rotation", 0)))
+            parts[part_id] = obj
         renderables.append(obj)
-        parts[part_id] = obj
         initial_visibility[obj.name] = part_id not in expression_parts or part_id in visible_expression_parts
 
     anchors: dict[str, tuple[float, float]] = {}
-    for anchor_id, point in data.get("anchors", {}).items():
-        if isinstance(point, list) and len(point) >= 2:
-            anchors[str(anchor_id)] = (float(point[0]), float(point[1]))
+    anchor_parents: dict[str, Any] = {}
+    for anchor_id, definition in data.get("anchors", {}).items():
+        anchor_name = str(anchor_id)
+        if isinstance(definition, dict):
+            anchors[anchor_name] = point2(definition.get("position"), f"anchor {anchor_name!r}")
+            parent_id = definition.get("parent")
+            if parent_id is not None:
+                if str(parent_id) not in controllers:
+                    raise ValueError(f"anchor {anchor_name!r} references unknown controller {parent_id!r}")
+                anchor_parents[anchor_name] = controllers[str(parent_id)]
+        elif isinstance(definition, list):
+            anchors[anchor_name] = point2(definition, f"anchor {anchor_name!r}")
 
     # Generic aliases let existing motion presets work with any manifest whose
     # concrete part names follow the documented mouth/arm/rod convention.
@@ -288,6 +313,7 @@ def create_layered_character(
         parts=parts,
         initial_visibility=initial_visibility,
         anchors=anchors,
+        anchor_parents=anchor_parents,
     )
 
 
