@@ -54,9 +54,25 @@ def idle(obj, start: int, end: int, params: dict[str, Any], **_) -> None:
 
 
 def talk(obj, start: int, end: int, params: dict[str, Any], *, registry, target: str, **_) -> None:
+    mouth_closed = registry.get(f"{target}.mouth_closed")
+    mouth_open = registry.get(f"{target}.mouth_open")
+    pulses = max(2, int(params.get("pulses", max(2, (end - start) // 4))))
+    if mouth_closed is not None and mouth_open is not None:
+        frames = _sample_frames(start, end, pulses)
+        for index, frame in enumerate(frames):
+            is_open = index % 2 == 1
+            mouth_closed.hide_render = is_open
+            mouth_closed.keyframe_insert(data_path="hide_render", frame=frame)
+            mouth_open.hide_render = not is_open
+            mouth_open.keyframe_insert(data_path="hide_render", frame=frame)
+        mouth_closed.hide_render = False
+        mouth_closed.keyframe_insert(data_path="hide_render", frame=end)
+        mouth_open.hide_render = True
+        mouth_open.keyframe_insert(data_path="hide_render", frame=end)
+        return
+
     mouth = registry.get(f"{target}.mouth", obj)
     base_scale = mouth.scale.copy()
-    pulses = max(2, int(params.get("pulses", max(2, (end - start) // 4))))
     for index, frame in enumerate(_sample_frames(start, end, pulses)):
         mouth.scale.y = base_scale.y * (1.0 if index % 2 == 0 else float(params.get("open", 2.8)))
         _keyframe(mouth, "scale", frame)

@@ -1,0 +1,90 @@
+{
+  "version": "1.0",
+  "title": "Fishing Episode 2 - Same Character",
+  "settings": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30,
+    "world_height": 9,
+    "background_color": "#0f172a",
+    "samples": 16,
+    "asset_library": "../../assets"
+  },
+  "scenes": [
+    {
+      "id": "storm_lake",
+      "duration": 5.0,
+      "background_color": "#475569",
+      "elements": [
+        {
+          "id": "ground",
+          "kind": "rectangle",
+          "x": 0,
+          "y": -3.4,
+          "z": 0,
+          "width": 16,
+          "height": 2.2,
+          "color": "#365314"
+        },
+        {
+          "id": "lake",
+          "kind": "rectangle",
+          "x": 3.5,
+          "y": -2.25,
+          "z": 0.5,
+          "width": 9,
+          "height": 1.7,
+          "color": "#075985"
+        },
+        {
+          "id": "angler",
+          "kind": "character",
+          "asset_ref": "char_angler@1",
+          "appearance": "default",
+          "expression": "scared",
+          "x": -2.8,
+          "y": -3.25,
+          "z": 2,
+          "scale": 0.9
+        }
+      ],
+      "motions": [
+        {
+          "target": "angler",
+          "preset": "enter",
+          "start": 0,
+          "end": 0.8,
+          "params": {"from_x": -4}
+        },
+        {
+          "target": "angler",
+          "preset": "talk",
+          "start": 1.0,
+          "end": 3.0,
+          "params": {"pulses": 10}
+        },
+        {
+          "target": "angler",
+          "preset": "shake",
+          "start": 3.1,
+          "end": 4.8,
+          "params": {"amplitude": 0.08}
+        },
+        {
+          "target": "camera",
+          "preset": "camera_pan",
+          "start": 0,
+          "end": 5.0,
+          "params": {"x": 0.7, "y": 0}
+        }
+      ],
+      "subtitles": [
+        {
+          "start": 1.0,
+          "end": 3.2,
+          "text": "Sao mặt hồ hôm nay đáng sợ thế?"
+        }
+      ]
+    }
+  ]
+}

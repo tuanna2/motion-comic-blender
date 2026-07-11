@@ -12,6 +12,7 @@ from .assets import AssetBundle, create_element, create_flat_object, create_text
 from .easing import choose_render_engine
 from .encoding import encode_png_sequence
 from .motions import apply_motion
+from .registry import AssetRegistry
 from .schema import Storyboard, load_storyboard
 
 
@@ -66,10 +67,11 @@ def _keyframe_visibility(obj, frame: int, visible: bool) -> None:
 
 def _show_during(bundle: AssetBundle, start: int, end: int) -> None:
     for obj in bundle.renderables:
+        visible = bundle.initial_visibility.get(obj.name, True)
         if start > 1:
             _keyframe_visibility(obj, start - 1, False)
-        _keyframe_visibility(obj, start, True)
-        _keyframe_visibility(obj, end, True)
+        _keyframe_visibility(obj, start, visible)
+        _keyframe_visibility(obj, end, visible)
         _keyframe_visibility(obj, end + 1, False)
 
 
@@ -109,7 +111,16 @@ def build_storyboard(storyboard: Storyboard, output_path: Path):
     world_width = world_height * aspect
     current_frame = 1
     fps = storyboard.settings.fps
-    asset_root = storyboard.source_path.parent
+    storyboard_dir = storyboard.source_path.parent
+    uses_asset_library = any(
+        element.get("kind") == "character"
+        for scene_data in storyboard.scenes
+        for element in scene_data.get("elements", [])
+    )
+    asset_registry = None
+    if uses_asset_library:
+        library_path = (storyboard_dir / storyboard.settings.asset_library).resolve()
+        asset_registry = AssetRegistry(library_path).scan()
 
     for scene_data in storyboard.scenes:
         scene_id = str(scene_data["id"])
@@ -122,7 +133,7 @@ def build_storyboard(storyboard: Storyboard, output_path: Path):
         _show_during(background, scene_start, scene_end)
 
         for element in scene_data.get("elements", []):
-            bundle = create_element(scene_id, element, asset_root)
+            bundle = create_element(scene_id, element, storyboard_dir, asset_registry)
             _register_bundle(registry, str(element["id"]), bundle)
             _show_during(bundle, scene_start, scene_end)
 

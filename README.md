@@ -9,6 +9,8 @@ The MVP includes a 10-second fishing demo with procedural placeholder art, subti
 - Headless Blender rendering from storyboard JSON
 - Orthographic 2D/2.5D scene composition
 - Transparent PNG loader with alpha materials
+- Versioned character library with `manifest.json` and `asset_ref`
+- Layered character expressions, anchors, and mouth sprite swapping
 - Procedural fishing character and fish for a zero-asset demo
 - Motion presets: `enter`, `idle`, `talk`, `pull_rod`, `fish_jump`, `shake`, `impact`, `fall`
 - Camera presets: `camera_zoom`, `camera_pan`
@@ -91,6 +93,65 @@ The default camera sees a 16:9 world approximately spanning:
 
 Each scene has its own elements and relative timing. Scene durations are concatenated automatically.
 
+## Reusable character library
+
+Production characters live outside episode storyboards:
+
+```text
+assets/characters/angler/
+├── manifest.json
+└── generated/            # demo PNG layers generated locally
+    ├── body.png
+    ├── head.png
+    ├── mouth_closed.png
+    └── mouth_open.png
+```
+
+Generate the placeholder PNG layers without Pillow or other dependencies:
+
+```bash
+python3 scripts/generate_demo_assets.py
+```
+
+The manifest fixes part dimensions, offsets, layer order, expressions, and anchors. Episodes reference the immutable version instead of declaring each PNG again:
+
+```json
+{
+  "id": "angler",
+  "kind": "character",
+  "asset_ref": "char_angler@1",
+  "appearance": "default",
+  "expression": "angry",
+  "x": -2.8,
+  "y": -3.25,
+  "z": 2,
+  "scale": 0.9
+}
+```
+
+`char_angler@1` is used by both `examples/fishing/storyboard.json` and
+`examples/fishing_episode_2/storyboard.json`. They render different scenes and
+expressions from the exact same PNG layers. A reference without a version, such
+as `char_angler`, resolves to the latest registered version; pinning `@1` is
+recommended for reproducible episodes.
+
+The asset library location is configured relative to each storyboard:
+
+```json
+"settings": {
+  "asset_library": "../../assets"
+}
+```
+
+To render the second episode after generating assets:
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender -b \
+  -P scripts/render_storyboard.py \
+  -- examples/fishing_episode_2/storyboard.json \
+  --output output/fishing-episode-2.mp4
+```
+
 ```json
 {
   "version": "1.0",
@@ -129,7 +190,7 @@ Each scene has its own elements and relative timing. Scene durations are concate
 }
 ```
 
-Asset paths are resolved relative to the storyboard JSON file. For example, if the JSON is at `episodes/001/storyboard.json`, `asset: "assets/hero.png"` resolves to `episodes/001/assets/hero.png`.
+Direct `kind: "image"` paths are resolved relative to the storyboard JSON file. Character part paths are resolved relative to their manifest file.
 
 ## Project structure
 
@@ -138,6 +199,7 @@ motion_comic/              Blender/Python engine
   assets.py                PNG and procedural object factories
   builder.py               Timeline and render builder
   motions.py               Reusable animation presets
+  registry.py              Versioned asset manifest discovery
   schema.py                JSON validation
 examples/fishing/          Runnable fishing demo
 scripts/render_storyboard.py
@@ -147,7 +209,7 @@ tests/                     Blender-independent unit tests
 
 ## MVP limitations
 
-- Procedural art is intentionally simple and exists only to verify the pipeline.
+- Generated layered art is intentionally simple and exists only to verify the pipeline.
 - TTS, audio mixing, lip-sync analysis, UI editing, and skeletal character rigs are planned next.
 - Motions that animate the same property at overlapping times can overwrite one another; keep them sequential unless the overlap is intentional.
 - Blender must include H.264/FFmpeg support, as standard Blender builds do.
@@ -156,7 +218,7 @@ tests/                     Blender-independent unit tests
 
 1. Edge-TTS voice generation and automatic audio placement
 2. Mouth sprite/viseme switching
-3. Layered character definitions (`head`, `body`, `arm`, `mouth`, props)
+3. Prop attachment using character anchors
 4. 20-30 production motion presets
 5. Web storyboard editor and batch episode queue
 

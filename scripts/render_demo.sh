@@ -15,6 +15,7 @@ if ! command -v ffmpeg >/dev/null 2>&1; then
 fi
 
 mkdir -p output
+python3 scripts/generate_demo_assets.py
 "$BLENDER_BIN" -b \
   -P scripts/render_storyboard.py \
   -- examples/fishing/storyboard.json \

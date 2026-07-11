@@ -7,7 +7,8 @@
     "fps": 30,
     "world_height": 9,
     "background_color": "#0f172a",
-    "samples": 16
+    "samples": 16,
+    "asset_library": "../../assets"
   },
   "scenes": [
     {
@@ -37,12 +38,14 @@
         },
         {
           "id": "angler",
-          "kind": "fishing_character",
+          "kind": "character",
+          "asset_ref": "char_angler@1",
+          "appearance": "default",
+          "expression": "normal",
           "x": -3.2,
-          "y": -1.15,
+          "y": -3.25,
           "z": 2,
-          "scale": 0.9,
-          "color": "#ef4444"
+          "scale": 0.9
         }
       ],
       "motions": [
@@ -110,12 +113,14 @@
         },
         {
           "id": "angler",
-          "kind": "fishing_character",
+          "kind": "character",
+          "asset_ref": "char_angler@1",
+          "appearance": "default",
+          "expression": "angry",
           "x": -2.8,
-          "y": -1.15,
+          "y": -3.25,
           "z": 2,
-          "scale": 0.9,
-          "color": "#ef4444"
+          "scale": 0.9
         },
         {
           "id": "monster_fish",
@@ -196,4 +201,3 @@
     }
   ]
 }
-

@@ -74,7 +74,22 @@ class SchemaTests(unittest.TestCase):
         with self.assertRaisesRegex(StoryboardError, "ends after scene duration"):
             load_storyboard(path)
 
+    def test_character_requires_asset_ref(self):
+        path = self.write_storyboard(
+            {
+                "version": "1.0",
+                "scenes": [
+                    {
+                        "id": "one",
+                        "duration": 1,
+                        "elements": [{"id": "hero", "kind": "character"}],
+                    }
+                ],
+            }
+        )
+        with self.assertRaisesRegex(StoryboardError, "character asset_ref is required"):
+            load_storyboard(path)
+
 
 if __name__ == "__main__":
     unittest.main()
-

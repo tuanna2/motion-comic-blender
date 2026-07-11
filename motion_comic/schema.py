@@ -22,6 +22,7 @@ SUPPORTED_PRESETS = {
 }
 
 SUPPORTED_ELEMENT_KINDS = {
+    "character",
     "fishing_character",
     "fish",
     "image",
@@ -43,6 +44,7 @@ class RenderSettings:
     world_height: float = 9.0
     background_color: str = "#111827"
     samples: int = 16
+    asset_library: str = "assets"
 
 
 @dataclass(frozen=True)
@@ -108,6 +110,11 @@ def _validate_scene(scene: dict[str, Any], index: int) -> None:
         _require(kind in SUPPORTED_ELEMENT_KINDS, f"scene {scene_id}: unsupported element kind {kind!r}")
         if kind == "image":
             _require(isinstance(element.get("asset"), str), f"scene {scene_id}: image asset is required")
+        if kind == "character":
+            _require(
+                isinstance(element.get("asset_ref"), str) and element["asset_ref"],
+                f"scene {scene_id}: character asset_ref is required",
+            )
         element_ids.add(element_id)
 
     for motion in motions:
@@ -146,6 +153,7 @@ def load_storyboard(path: str | Path) -> Storyboard:
         world_height=float(raw_settings.get("world_height", 9.0)),
         background_color=str(raw_settings.get("background_color", "#111827")),
         samples=int(raw_settings.get("samples", 16)),
+        asset_library=str(raw_settings.get("asset_library", "assets")),
     )
     _require(settings.width > 0 and settings.height > 0, "render dimensions must be positive")
     _require(1 <= settings.fps <= 120, "fps must be between 1 and 120")
@@ -158,4 +166,3 @@ def load_storyboard(path: str | Path) -> Storyboard:
         _validate_scene(scene, index)
 
     return Storyboard(source_path=source_path, title=title, settings=settings, scenes=scenes)
-
