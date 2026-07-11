@@ -23,6 +23,7 @@ SUPPORTED_PRESETS = {
 
 SUPPORTED_ELEMENT_KINDS = {
     "character",
+    "prop",
     "fishing_character",
     "fish",
     "image",
@@ -92,6 +93,12 @@ def _validate_scene(scene: dict[str, Any], index: int) -> None:
     _require(isinstance(scene_id, str) and scene_id, f"scene {index}: id is required")
     duration = _number(scene.get("duration"), f"scene {scene_id}: duration")
     _require(duration > 0, f"scene {scene_id}: duration must be positive")
+    template_ref = scene.get("template_ref")
+    if template_ref is not None:
+        _require(
+            isinstance(template_ref, str) and template_ref,
+            f"scene {scene_id}: template_ref must be a non-empty string",
+        )
 
     elements = scene.get("elements", [])
     motions = scene.get("motions", [])
@@ -101,6 +108,7 @@ def _validate_scene(scene: dict[str, Any], index: int) -> None:
     _require(isinstance(subtitles, list), f"scene {scene_id}: subtitles must be an array")
 
     element_ids: set[str] = set()
+    attachments: list[tuple[str, dict[str, Any]]] = []
     for element in elements:
         _require(isinstance(element, dict), f"scene {scene_id}: each element must be an object")
         element_id = element.get("id")
@@ -110,12 +118,36 @@ def _validate_scene(scene: dict[str, Any], index: int) -> None:
         _require(kind in SUPPORTED_ELEMENT_KINDS, f"scene {scene_id}: unsupported element kind {kind!r}")
         if kind == "image":
             _require(isinstance(element.get("asset"), str), f"scene {scene_id}: image asset is required")
-        if kind == "character":
+        if kind in {"character", "prop"}:
             _require(
                 isinstance(element.get("asset_ref"), str) and element["asset_ref"],
-                f"scene {scene_id}: character asset_ref is required",
+                f"scene {scene_id}: {kind} asset_ref is required",
             )
+        if "slot" in element:
+            _require(isinstance(element["slot"], str), f"scene {scene_id}: element slot must be a string")
+        if "scene_anchor" in element:
+            _require(
+                isinstance(element["scene_anchor"], str),
+                f"scene {scene_id}: element scene_anchor must be a string",
+            )
+        attachment = element.get("attach")
+        if attachment is not None:
+            _require(isinstance(attachment, dict), f"scene {scene_id}: attach must be an object")
+            _require(
+                isinstance(attachment.get("target"), str) and attachment["target"],
+                f"scene {scene_id}: attach target is required",
+            )
+            _require(
+                isinstance(attachment.get("anchor"), str) and attachment["anchor"],
+                f"scene {scene_id}: attach anchor is required",
+            )
+            attachments.append((element_id, attachment))
         element_ids.add(element_id)
+
+    for element_id, attachment in attachments:
+        target = attachment["target"]
+        _require(target in element_ids, f"scene {scene_id}: attachment target {target!r} does not exist")
+        _require(target != element_id, f"scene {scene_id}: element {element_id!r} cannot attach to itself")
 
     for motion in motions:
         _require(isinstance(motion, dict), f"scene {scene_id}: each motion must be an object")

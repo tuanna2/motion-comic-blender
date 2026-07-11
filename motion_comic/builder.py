@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import shutil
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,7 @@ import bpy
 from .assets import AssetBundle, create_element, create_flat_object, create_text, hex_color
 from .easing import choose_render_engine
 from .encoding import encode_png_sequence
+from .layout import resolve_scene_elements
 from .motions import apply_motion
 from .registry import AssetRegistry
 from .schema import Storyboard, load_storyboard
@@ -81,6 +83,39 @@ def _register_bundle(registry: dict[str, Any], local_id: str, bundle: AssetBundl
         registry[f"{local_id}.{part_name}"] = obj
 
 
+def _apply_attachments(
+    elements: list[dict[str, Any]],
+    bundles: dict[str, AssetBundle],
+) -> None:
+    for element in elements:
+        attachment = element.get("attach")
+        if attachment is None:
+            continue
+        element_id = str(element["id"])
+        target_id = str(attachment["target"])
+        anchor_id = str(attachment["anchor"])
+        if target_id not in bundles:
+            raise ValueError(f"attachment target {target_id!r} does not exist for {element_id!r}")
+        target_bundle = bundles[target_id]
+        if anchor_id not in target_bundle.anchors:
+            known = ", ".join(sorted(target_bundle.anchors)) or "none"
+            raise ValueError(
+                f"anchor {anchor_id!r} does not exist on {target_id!r}; available anchors: {known}"
+            )
+        offset = attachment.get("offset", [0, 0])
+        if not isinstance(offset, list) or len(offset) < 2:
+            raise ValueError(f"attachment offset for {element_id!r} must contain x and y")
+        anchor_x, anchor_y = target_bundle.anchors[anchor_id]
+        bundle = bundles[element_id]
+        bundle.root.parent = target_bundle.root
+        bundle.root.location = (
+            anchor_x + float(offset[0]),
+            anchor_y + float(offset[1]),
+            float(attachment.get("z", 0.25)),
+        )
+        bundle.root.rotation_euler.z += math.radians(float(attachment.get("rotation", 0)))
+
+
 def _scene_background(scene_id: str, scene_data: dict[str, Any], world_width: float, world_height: float):
     color = str(scene_data.get("background_color", "#7dd3fc"))
     obj = create_flat_object(
@@ -113,10 +148,10 @@ def build_storyboard(storyboard: Storyboard, output_path: Path):
     fps = storyboard.settings.fps
     storyboard_dir = storyboard.source_path.parent
     uses_asset_library = any(
-        element.get("kind") == "character"
+        element.get("kind") in {"character", "prop"}
         for scene_data in storyboard.scenes
         for element in scene_data.get("elements", [])
-    )
+    ) or any(scene_data.get("template_ref") for scene_data in storyboard.scenes)
     asset_registry = None
     if uses_asset_library:
         library_path = (storyboard_dir / storyboard.settings.asset_library).resolve()
@@ -128,14 +163,27 @@ def build_storyboard(storyboard: Storyboard, output_path: Path):
         scene_start = current_frame
         scene_end = current_frame + duration_frames - 1
         registry: dict[str, Any] = {"camera": camera}
+        bundles: dict[str, AssetBundle] = {}
+
+        template = None
+        template_ref = scene_data.get("template_ref")
+        if template_ref is not None:
+            if asset_registry is None:
+                raise ValueError("scene template_ref requires a configured asset library")
+            template = asset_registry.resolve(str(template_ref), "scene_template")
+        resolved_elements = resolve_scene_elements(scene_data.get("elements", []), template)
 
         background = _scene_background(scene_id, scene_data, world_width, world_height)
         _show_during(background, scene_start, scene_end)
 
-        for element in scene_data.get("elements", []):
+        for element in resolved_elements:
             bundle = create_element(scene_id, element, storyboard_dir, asset_registry)
-            _register_bundle(registry, str(element["id"]), bundle)
+            element_id = str(element["id"])
+            bundles[element_id] = bundle
+            _register_bundle(registry, element_id, bundle)
             _show_during(bundle, scene_start, scene_end)
+
+        _apply_attachments(resolved_elements, bundles)
 
         for motion in scene_data.get("motions", []):
             target = str(motion["target"])

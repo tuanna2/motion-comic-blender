@@ -15,6 +15,7 @@ from motion_comic.png import canvas, draw_ellipse, draw_line, draw_rectangle, wr
 
 
 OUTPUT = ROOT / "assets/characters/angler/generated"
+PROP_OUTPUT = ROOT / "assets/props/straw_hat/generated"
 INK = (17, 24, 39, 255)
 SKIN = (242, 179, 138, 255)
 SHIRT = (239, 68, 68, 255)
@@ -59,6 +60,12 @@ def main() -> int:
     draw_ellipse(mouth_closed, 55, 16, 48, 7, (127, 29, 29, 255))
     mouth_open = outlined_ellipse(84, 74, (127, 29, 29, 255), border=5)
 
+    hat = canvas(280, 120)
+    draw_ellipse(hat, 140, 88, 132, 25, (120, 53, 15, 255))
+    draw_rectangle(hat, 73, 25, 207, 88, (217, 119, 6, 255))
+    draw_ellipse(hat, 140, 28, 67, 22, (245, 158, 11, 255))
+    draw_rectangle(hat, 73, 68, 207, 82, (127, 29, 29, 255))
+
     assets = {
         "body.png": body,
         "head.png": head,
@@ -73,10 +80,11 @@ def main() -> int:
     }
     for filename, image in assets.items():
         write_png(OUTPUT / filename, image)
-    print(f"Generated {len(assets)} layered PNG assets in {OUTPUT}")
+    write_png(PROP_OUTPUT / "hat.png", hat)
+    print(f"Generated {len(assets)} character layers in {OUTPUT}")
+    print(f"Generated reusable prop in {PROP_OUTPUT}")
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

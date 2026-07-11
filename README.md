@@ -11,6 +11,8 @@ The MVP includes a 10-second fishing demo with procedural placeholder art, subti
 - Transparent PNG loader with alpha materials
 - Versioned character library with `manifest.json` and `asset_ref`
 - Layered character expressions, anchors, and mouth sprite swapping
+- Reusable scene templates with named slots and automatic collision-safe placement
+- Scene anchors for water/ground positions and prop attachment to character anchors
 - Procedural fishing character and fish for a zero-asset demo
 - Motion presets: `enter`, `idle`, `talk`, `pull_rod`, `fish_jump`, `shake`, `impact`, `fall`
 - Camera presets: `camera_zoom`, `camera_pan`
@@ -152,6 +154,65 @@ To render the second episode after generating assets:
   --output output/fishing-episode-2.mp4
 ```
 
+## Scene templates and automatic layout
+
+Scene templates keep production coordinates out of episode storyboards. The
+demo uses `scene_river_bank@1`, whose manifest defines `left`, `center`,
+`right`, `far_left`, and `far_right` slots plus named water anchors.
+
+```json
+{
+  "id": "river_intro",
+  "template_ref": "scene_river_bank@1",
+  "elements": [
+    {
+      "id": "angler",
+      "kind": "character",
+      "asset_ref": "char_angler@1",
+      "slot": "left"
+    }
+  ]
+}
+```
+
+Use `"slot": "auto"` to select the next free slot from the template's
+`auto_order`. Reusing an occupied slot raises a validation error unless the
+element explicitly sets `"allow_overlap": true`. Explicit `x`, `y`, `z`, or
+`scale` values override only that slot default.
+
+Non-character objects can use named scene anchors:
+
+```json
+{
+  "id": "monster_fish",
+  "kind": "fish",
+  "scene_anchor": "water_right"
+}
+```
+
+## Attaching props to character anchors
+
+The straw-hat demo is a reusable `sprite_prop` manifest. It is positioned
+relative to the character's `head` anchor, so it follows every root motion,
+shake, entrance, and fall automatically.
+
+```json
+{
+  "id": "angler_hat",
+  "kind": "prop",
+  "asset_ref": "prop_straw_hat@1",
+  "attach": {
+    "target": "angler",
+    "anchor": "head",
+    "offset": [0, 0.5],
+    "z": 0.3
+  }
+}
+```
+
+Scene layouts live under `assets/scenes/`, props under `assets/props/`, and
+characters under `assets/characters/`. All three use versioned manifests.
+
 ```json
 {
   "version": "1.0",
@@ -200,6 +261,7 @@ motion_comic/              Blender/Python engine
   builder.py               Timeline and render builder
   motions.py               Reusable animation presets
   registry.py              Versioned asset manifest discovery
+  layout.py                Slot, scene-anchor, and auto-layout resolution
   schema.py                JSON validation
 examples/fishing/          Runnable fishing demo
 scripts/render_storyboard.py
@@ -218,9 +280,9 @@ tests/                     Blender-independent unit tests
 
 1. Edge-TTS voice generation and automatic audio placement
 2. Mouth sprite/viseme switching
-3. Prop attachment using character anchors
-4. 20-30 production motion presets
-5. Web storyboard editor and batch episode queue
+3. Part-level rig controllers for shoulders, elbows, knees, and head turns
+4. Edge-TTS timing and audio-driven mouth switching
+5. Batch episode queue, cache, retries, and web storyboard editor
 
 ## License
 

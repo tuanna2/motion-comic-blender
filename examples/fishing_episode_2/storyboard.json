@@ -13,6 +13,7 @@
   "scenes": [
     {
       "id": "storm_lake",
+      "template_ref": "scene_river_bank@1",
       "duration": 5.0,
       "background_color": "#475569",
       "elements": [
@@ -42,10 +43,18 @@
           "asset_ref": "char_angler@1",
           "appearance": "default",
           "expression": "scared",
-          "x": -2.8,
-          "y": -3.25,
-          "z": 2,
-          "scale": 0.9
+          "slot": "auto"
+        },
+        {
+          "id": "angler_hat",
+          "kind": "prop",
+          "asset_ref": "prop_straw_hat@1",
+          "attach": {
+            "target": "angler",
+            "anchor": "head",
+            "offset": [0, 0.5],
+            "z": 0.3
+          }
         }
       ],
       "motions": [

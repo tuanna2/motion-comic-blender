@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "id": "prop_straw_hat",
+  "version": 1,
+  "type": "sprite_prop",
+  "asset": "generated/hat.png",
+  "width": 1.55,
+  "default_scale": 1.0,
+  "pivot": "center",
+  "anchors": {
+    "center": [0, 0]
+  }
+}
+

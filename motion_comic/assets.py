@@ -213,7 +213,7 @@ def create_layered_character(
     element: dict[str, Any],
     asset_registry: AssetRegistry,
 ) -> AssetBundle:
-    manifest = asset_registry.resolve(str(element["asset_ref"]))
+    manifest = asset_registry.resolve(str(element["asset_ref"]), "layered_character")
     data = manifest.data
     appearance_id = str(element.get("appearance", data.get("default_appearance", "default")))
     appearance = data["appearances"].get(appearance_id)
@@ -291,6 +291,40 @@ def create_layered_character(
     )
 
 
+def create_sprite_prop(
+    name: str,
+    element: dict[str, Any],
+    asset_registry: AssetRegistry,
+) -> AssetBundle:
+    manifest = asset_registry.resolve(str(element["asset_ref"]), "sprite_prop")
+    data = manifest.data
+    obj = create_image(
+        name,
+        (manifest.directory / str(data["asset"])).resolve(),
+        location=(
+            float(element.get("x", 0)),
+            float(element.get("y", 0)),
+            float(element.get("z", 3)),
+        ),
+        width=float(element.get("width", data.get("width", 1.0))),
+        height=(
+            float(element["height"])
+            if "height" in element
+            else float(data["height"])
+            if "height" in data
+            else None
+        ),
+    )
+    obj.rotation_euler.z = math.radians(float(element.get("rotation", data.get("rotation", 0))))
+    scale = float(element.get("scale", 1.0)) * float(data.get("default_scale", 1.0))
+    obj.scale = tuple(axis * scale for axis in obj.scale)
+    anchors: dict[str, tuple[float, float]] = {}
+    for anchor_id, point in data.get("anchors", {}).items():
+        if isinstance(point, list) and len(point) >= 2:
+            anchors[str(anchor_id)] = (float(point[0]), float(point[1]))
+    return AssetBundle(root=obj, renderables=[obj], anchors=anchors)
+
+
 def create_element(
     scene_id: str,
     element: dict[str, Any],
@@ -309,6 +343,10 @@ def create_element(
         if asset_registry is None:
             raise ValueError("character elements require a configured asset library")
         return create_layered_character(name, element, asset_registry)
+    if kind == "prop":
+        if asset_registry is None:
+            raise ValueError("prop elements require a configured asset library")
+        return create_sprite_prop(name, element, asset_registry)
     if kind == "fishing_character":
         return create_fishing_character(name, element)
     if kind == "fish":

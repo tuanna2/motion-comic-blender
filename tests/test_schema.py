@@ -90,6 +90,29 @@ class SchemaTests(unittest.TestCase):
         with self.assertRaisesRegex(StoryboardError, "character asset_ref is required"):
             load_storyboard(path)
 
+    def test_attachment_target_must_exist(self):
+        path = self.write_storyboard(
+            {
+                "version": "1.0",
+                "scenes": [
+                    {
+                        "id": "one",
+                        "duration": 1,
+                        "elements": [
+                            {
+                                "id": "hat",
+                                "kind": "prop",
+                                "asset_ref": "prop_hat@1",
+                                "attach": {"target": "missing", "anchor": "head"},
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+        with self.assertRaisesRegex(StoryboardError, "attachment target 'missing' does not exist"):
+            load_storyboard(path)
+
 
 if __name__ == "__main__":
     unittest.main()

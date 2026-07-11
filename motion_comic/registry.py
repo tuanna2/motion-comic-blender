@@ -16,6 +16,7 @@ class AssetRegistryError(ValueError):
 class AssetManifest:
     asset_id: str
     version: int
+    asset_type: str
     path: Path
     data: dict[str, Any]
 
@@ -50,7 +51,7 @@ class AssetRegistry:
                 self._latest[manifest.asset_id] = manifest
         return self
 
-    def resolve(self, reference: str) -> AssetManifest:
+    def resolve(self, reference: str, expected_type: str | None = None) -> AssetManifest:
         if "@" in reference:
             manifest = self._by_reference.get(reference)
         else:
@@ -58,6 +59,10 @@ class AssetRegistry:
         if manifest is None:
             known = ", ".join(sorted(self._by_reference)) or "none"
             raise AssetRegistryError(f"unknown asset_ref {reference!r}; registered assets: {known}")
+        if expected_type is not None and manifest.asset_type != expected_type:
+            raise AssetRegistryError(
+                f"asset_ref {reference!r} has type {manifest.asset_type!r}, expected {expected_type!r}"
+            )
         return manifest
 
     @staticmethod
@@ -74,10 +79,24 @@ class AssetRegistry:
             raise AssetRegistryError(f"manifest id is required: {path}")
         if not isinstance(version, int) or version < 1:
             raise AssetRegistryError(f"manifest version must be a positive integer: {path}")
-        if data.get("type") != "layered_character":
-            raise AssetRegistryError(f"unsupported manifest type in {path}: {data.get('type')!r}")
-        appearances = data.get("appearances")
-        if not isinstance(appearances, dict) or not appearances:
-            raise AssetRegistryError(f"manifest appearances are required: {path}")
-        return AssetManifest(asset_id=asset_id, version=version, path=path, data=data)
-
+        asset_type = data.get("type")
+        if asset_type not in {"layered_character", "sprite_prop", "scene_template"}:
+            raise AssetRegistryError(f"unsupported manifest type in {path}: {asset_type!r}")
+        if asset_type == "layered_character":
+            appearances = data.get("appearances")
+            if not isinstance(appearances, dict) or not appearances:
+                raise AssetRegistryError(f"manifest appearances are required: {path}")
+        elif asset_type == "sprite_prop":
+            if not isinstance(data.get("asset"), str) or not data["asset"]:
+                raise AssetRegistryError(f"sprite prop asset is required: {path}")
+        elif asset_type == "scene_template":
+            slots = data.get("slots")
+            if not isinstance(slots, dict) or not slots:
+                raise AssetRegistryError(f"scene template slots are required: {path}")
+        return AssetManifest(
+            asset_id=asset_id,
+            version=version,
+            asset_type=asset_type,
+            path=path,
+            data=data,
+        )
