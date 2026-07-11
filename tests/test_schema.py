@@ -77,6 +77,29 @@ class SchemaTests(unittest.TestCase):
         with self.assertRaisesRegex(StoryboardError, "subtitle speaker 'missing' does not exist"):
             load_storyboard(path)
 
+    def test_rejects_element_visibility_outside_scene(self):
+        path = self.write_storyboard(
+            {
+                "version": "1.0",
+                "scenes": [
+                    {
+                        "id": "one",
+                        "duration": 1,
+                        "elements": [
+                            {
+                                "id": "label",
+                                "kind": "text",
+                                "visible_start": 0.8,
+                                "visible_end": 1.2,
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+        with self.assertRaisesRegex(StoryboardError, "invalid visibility range"):
+            load_storyboard(path)
+
     def test_rejects_unknown_target(self):
         path = self.write_storyboard(
             {

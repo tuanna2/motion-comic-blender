@@ -7,23 +7,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .action_catalog import ACTION_CATALOG, motion_action_key
 
-SUPPORTED_PRESETS = {
-    "enter",
-    "idle",
-    "talk",
-    "walk",
-    "wave",
-    "look",
-    "nod",
-    "pull_rod",
-    "fish_jump",
-    "shake",
-    "impact",
-    "fall",
-    "camera_zoom",
-    "camera_pan",
-}
+SUPPORTED_PRESETS = set(ACTION_CATALOG)
 
 SUPPORTED_ELEMENT_KINDS = {
     "character",
@@ -89,9 +75,12 @@ def _number(value: Any, field_name: str) -> float:
 
 def _validate_motion(motion: dict[str, Any], duration: float, scene_id: str) -> None:
     target = motion.get("target")
-    preset = motion.get("preset")
+    try:
+        action = motion_action_key(motion)
+    except ValueError as exc:
+        raise StoryboardError(f"scene {scene_id}: {exc}") from exc
     _require(isinstance(target, str) and target, f"scene {scene_id}: motion target is required")
-    _require(preset in SUPPORTED_PRESETS, f"scene {scene_id}: unsupported preset {preset!r}")
+    _require(action in SUPPORTED_PRESETS, f"scene {scene_id}: unsupported action {action!r}")
     start = _number(motion.get("start", 0), f"scene {scene_id}: motion start")
     end = _number(motion.get("end", duration), f"scene {scene_id}: motion end")
     _require(start >= 0, f"scene {scene_id}: motion start cannot be negative")
@@ -143,6 +132,18 @@ def _validate_scene(scene: dict[str, Any], index: int) -> None:
                 isinstance(element["scene_anchor"], str),
                 f"scene {scene_id}: element scene_anchor must be a string",
             )
+        visible_start = _number(
+            element.get("visible_start", 0),
+            f"scene {scene_id}: element {element_id} visible_start",
+        )
+        visible_end = _number(
+            element.get("visible_end", duration),
+            f"scene {scene_id}: element {element_id} visible_end",
+        )
+        _require(
+            0 <= visible_start < visible_end <= duration + 1e-6,
+            f"scene {scene_id}: invalid visibility range for element {element_id!r}",
+        )
         attachment = element.get("attach")
         if attachment is not None:
             _require(isinstance(attachment, dict), f"scene {scene_id}: attach must be an object")

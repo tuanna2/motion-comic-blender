@@ -13,15 +13,16 @@ animations. Transparent PNG assets are supported for replacing the placeholders 
 - Transparent PNG loader with alpha materials
 - Versioned character library with `manifest.json` and `asset_ref`
 - Layered character expressions, anchors, and mouth sprite swapping
-- Hierarchical 2D character rig with head, shoulder, elbow, hip, and knee controllers
+- Hierarchical two-arm 2D character rig with head, shoulders, elbows, hips, and knees
 - Reusable scene templates with named slots and automatic collision-safe placement
 - Scene anchors for water/ground positions and prop attachment to character anchors
 - Procedural fishing character and fish for a zero-asset demo
-- Motion presets: `enter`, `idle`, `talk`, `walk`, `wave`, `look`, `nod`, `pull_rod`, `fish_jump`, `shake`, `impact`, `fall`
-- Camera presets: `camera_zoom`, `camera_pan`
+- Semantic catalog with 305 character, interaction, fight, camera, and effect actions
+- Backward-compatible specialized presets such as `pull_rod` and `fish_jump`
 - Timed subtitles
 - Cached Edge-TTS voice generation and WordBoundary-driven mouth animation
 - FFmpeg audio timeline mixing and H.264/AAC MP4 output
+- Batch queue with shared cache, resume, retries, parallel workers, and status JSON
 - Pure-Python validation and unit tests
 
 ## Requirements
@@ -242,6 +243,8 @@ and attached hat.
 ```text
 body
 ├── head
+├── arm_left_upper
+│   └── forearm_left
 ├── arm_upper
 │   └── forearm
 │       └── rod
@@ -271,7 +274,7 @@ Storyboard motions stay semantic and do not contain per-frame coordinates:
 ```json
 {
   "target": "angler",
-  "preset": "walk",
+  "action": "walk",
   "start": 0,
   "end": 1.2,
   "params": {"from_x": -4, "cycles": 3}
@@ -332,6 +335,89 @@ MP4 as AAC. The old `talk` motion remains available for silent previews.
 Run `generate_voice.py --force` to bypass the cache. Change only one dialogue
 line and only that line is synthesized again.
 
+## Semantic action catalog
+
+Stage 5 accepts every action key through the readable `action` field. The 305
+registered keys cover movement, body poses, two-hand gestures, interactions,
+dialogue acting, four emotion groups, thinking, fights, daily activity,
+motion-comic simulation, cameras, effects, and the legacy presets.
+
+```json
+{
+  "target": "hero",
+  "action": "punch",
+  "start": 1.2,
+  "end": 2.5,
+  "params": {"with": "rival", "recoil": 1.0}
+}
+```
+
+Interactions use `params.with` to identify the second character. Fight actions
+compose wind-up, fast pose shift, contact, recoil, and settle instead of trying
+to reproduce every intermediate drawing. Camera and effect actions can be
+placed on the same timeline:
+
+```json
+[
+  {"target": "hero", "action": "punch", "start": 1.2, "end": 2.5, "params": {"with": "rival"}},
+  {"target": "camera", "action": "impact_flash", "start": 1.8, "end": 2.2},
+  {"target": "camera", "action": "camera_shake", "start": 1.8, "end": 2.5}
+]
+```
+
+The character now has two shoulder/elbow chains plus dynamic `normal`, `happy`,
+`angry`, `sad`, `surprised`, `blush`, and `crying` face layers. Procedural
+symbols and overlays cover question/exclamation marks, anger, speed, dust,
+screen flashes, auras, blush, and tears.
+
+Print the complete catalog for an LLM storyboard prompt or editor:
+
+```bash
+python3 scripts/list_actions.py --format json
+python3 scripts/list_actions.py --category fight --format markdown
+```
+
+See `docs/ACTIONS.md` and the 20-second
+`examples/action_showcase/storyboard.json` for multi-character examples.
+
+Elements such as impact labels can be visible for only part of a scene:
+
+```json
+{
+  "id": "impact_text",
+  "kind": "text",
+  "text": "CÁ KHỔNG LỒ!",
+  "visible_start": 2.2,
+  "visible_end": 3.2
+}
+```
+
+## Batch production
+
+`examples/batch.json` queues both fishing episodes and the action showcase. A
+batch shares the voice cache, skips existing MP4 outputs, retries failed jobs,
+and writes state after every attempt.
+
+Preview commands without starting Blender:
+
+```bash
+python3 scripts/render_batch.py examples/batch.json --dry-run
+```
+
+Render sequentially, which is recommended for a base Mac mini M4:
+
+```bash
+python3 scripts/render_batch.py examples/batch.json
+```
+
+Use `--workers 2` only when memory allows two Blender processes. Use `--force`
+to replace existing videos and `--force-voice` to bypass cached TTS. Progress
+is resumable from existing outputs and recorded at:
+
+```text
+output/batch/batch_status.json
+```
+
 ```json
 {
   "version": "1.0",
@@ -356,7 +442,7 @@ line and only that line is synthesized again.
       "motions": [
         {
           "target": "hero",
-          "preset": "enter",
+          "action": "enter_scene",
           "start": 0,
           "end": 0.8,
           "params": {"from_x": -5}
@@ -379,15 +465,21 @@ motion_comic/              Blender/Python engine
   assets.py                PNG and procedural object factories
   builder.py               Timeline and render builder
   motions.py               Reusable animation presets
+  action_catalog.py        305 semantic action registrations
+  effects.py               Procedural symbols, flashes, and auras
   rig.py                   Rig hierarchy validation and ordering
+  batch.py                 Batch validation and command planning
   voice.py                 TTS jobs, cache keys, word cues, and audio mixing
   lipsync.py               Lip-sync sidecar validation and frame conversion
   registry.py              Versioned asset manifest discovery
   layout.py                Slot, scene-anchor, and auto-layout resolution
   schema.py                JSON validation
 examples/fishing/          Runnable fishing demo
+examples/action_showcase/  Multi-character action demo
 scripts/render_storyboard.py
 scripts/generate_voice.py
+scripts/render_batch.py
+scripts/list_actions.py
 scripts/check_project.py
 tests/                     Blender-independent unit tests
 ```
@@ -396,6 +488,8 @@ tests/                     Blender-independent unit tests
 
 - Generated layered art is intentionally simple and exists only to verify the pipeline.
 - Lip sync currently uses open/closed mouth sprites at word timing, not phoneme-specific visemes.
+- Complex item transfer, permanent hand attachment, and true hand/foot IK are approximated with poses.
+- `screen_blur`, `freeze_frame`, and `slow_motion` are deterministic visual holds and do not retime audio yet.
 - Edge-TTS is an unofficial online integration and may change or become unavailable; cached lines remain renderable.
 - For a commercial production dependency, evaluate a provider with explicit service terms and availability guarantees.
 - IK controls, mesh deformation, sound effects, music ducking, and UI editing are planned next.
@@ -406,9 +500,9 @@ tests/                     Blender-independent unit tests
 
 1. Phoneme-specific visemes and reusable facial pose sets
 2. Sound effects, music tracks, loudness normalization, and ducking
-3. Optional hand/foot IK and reusable body pose library
-4. Batch episode queue, render cache, and retries
-5. Web storyboard, dialogue, and pose editor
+3. Optional hand/foot IK, prop attachment events, and reusable body pose library
+4. Content templates, automatic action scheduling, and render-farm workers
+5. Web storyboard, dialogue, action, and pose editor
 
 ## License
 

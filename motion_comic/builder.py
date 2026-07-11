@@ -9,9 +9,11 @@ from typing import Any
 
 import bpy
 
+from .action_catalog import motion_action_key, resolve_action
 from .assets import AssetBundle, create_element, create_flat_object, create_text, hex_color
 from .easing import choose_render_engine
 from .encoding import encode_png_sequence
+from .effects import create_action_effect
 from .layout import resolve_scene_elements
 from .lipsync import LipCue, cue_frame_range, load_lip_sync
 from .motions import apply_motion
@@ -245,18 +247,51 @@ def build_storyboard(
             element_id = str(element["id"])
             bundles[element_id] = bundle
             _register_bundle(registry, element_id, bundle)
-            _show_during(bundle, scene_start, scene_end)
+            element_start = scene_start + round(float(element.get("visible_start", 0)) * fps)
+            element_end = min(
+                scene_end,
+                scene_start
+                + round(float(element.get("visible_end", scene_data["duration"])) * fps),
+            )
+            _show_during(bundle, element_start, element_end)
 
         _apply_attachments(resolved_elements, bundles)
+
+        for motion_index, motion in enumerate(scene_data.get("motions", [])):
+            action_key = motion_action_key(motion)
+            if action_key is None or resolve_action(action_key).category != "effect":
+                continue
+            effect_start = scene_start + round(float(motion.get("start", 0)) * fps)
+            effect_end = min(
+                scene_end,
+                scene_start + round(float(motion.get("end", scene_data["duration"])) * fps),
+            )
+            if action_key in {"impact_flash", "screen_flash"}:
+                flash_frames = int(motion.get("params", {}).get("frames", 3))
+                effect_end = min(effect_end, effect_start + max(1, flash_frames))
+            effect = create_action_effect(
+                scene_id,
+                motion_index,
+                action_key,
+                bundles.get(str(motion["target"])),
+                world_width=world_width,
+                world_height=world_height,
+                params=dict(motion.get("params", {})),
+            )
+            if effect is not None:
+                _show_during(effect, effect_start, effect_end)
 
         for motion in scene_data.get("motions", []):
             target = str(motion["target"])
             obj = registry[target]
+            action_key = motion_action_key(motion)
+            if action_key is None:
+                raise ValueError(f"motion for {target!r} is missing action")
             start = scene_start + round(float(motion.get("start", 0)) * fps)
             end = scene_start + round(float(motion.get("end", scene_data["duration"])) * fps)
             end = min(scene_end, end)
             apply_motion(
-                str(motion["preset"]),
+                action_key,
                 obj,
                 start,
                 end,

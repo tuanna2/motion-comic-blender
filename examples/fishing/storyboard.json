@@ -162,7 +162,9 @@
           "z": 8,
           "size": 1.1,
           "text": "CÁ KHỔNG LỒ!",
-          "color": "#fef08a"
+          "color": "#fef08a",
+          "visible_start": 2.2,
+          "visible_end": 3.2
         }
       ],
       "motions": [

@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "output_dir": "../output/batch",
+  "cache_dir": "../output/.voice-cache",
+  "status_file": "batch_status.json",
+  "retries": 1,
+  "episodes": [
+    {
+      "id": "fishing-01",
+      "storyboard": "fishing/storyboard.json",
+      "output": "fishing-01.mp4",
+      "voice": true,
+      "save_blend": false
+    },
+    {
+      "id": "fishing-02",
+      "storyboard": "fishing_episode_2/storyboard.json",
+      "output": "fishing-02.mp4",
+      "voice": true,
+      "save_blend": false
+    },
+    {
+      "id": "action-showcase",
+      "storyboard": "action_showcase/storyboard.json",
+      "output": "action-showcase.mp4",
+      "voice": false,
+      "save_blend": false
+    }
+  ]
+}

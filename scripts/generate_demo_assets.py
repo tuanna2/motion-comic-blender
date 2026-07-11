@@ -58,6 +58,32 @@ def main() -> int:
     draw_line(eyes_angry, 25, 12, 67, 28, INK, 5)
     draw_line(eyes_angry, 103, 28, 145, 12, INK, 5)
 
+    eyes_closed = canvas(170, 58)
+    draw_line(eyes_closed, 28, 32, 68, 32, INK, 6)
+    draw_line(eyes_closed, 102, 32, 142, 32, INK, 6)
+
+    eyes_sad = canvas(170, 64)
+    draw_ellipse(eyes_sad, 48, 38, 11, 15, INK)
+    draw_ellipse(eyes_sad, 122, 38, 11, 15, INK)
+    draw_line(eyes_sad, 26, 27, 67, 12, INK, 5)
+    draw_line(eyes_sad, 103, 12, 144, 27, INK, 5)
+
+    eyes_surprised = canvas(170, 66)
+    draw_ellipse(eyes_surprised, 48, 33, 18, 24, INK)
+    draw_ellipse(eyes_surprised, 122, 33, 18, 24, INK)
+    draw_ellipse(eyes_surprised, 48, 33, 7, 11, (255, 255, 255, 255))
+    draw_ellipse(eyes_surprised, 122, 33, 7, 11, (255, 255, 255, 255))
+
+    blush = canvas(190, 54)
+    draw_ellipse(blush, 36, 27, 28, 14, (244, 63, 94, 150))
+    draw_ellipse(blush, 154, 27, 28, 14, (244, 63, 94, 150))
+
+    tears = canvas(170, 120)
+    draw_line(tears, 48, 22, 48, 104, (56, 189, 248, 210), 9)
+    draw_line(tears, 122, 22, 122, 104, (56, 189, 248, 210), 9)
+    draw_ellipse(tears, 48, 104, 11, 13, (56, 189, 248, 210))
+    draw_ellipse(tears, 122, 104, 11, 13, (56, 189, 248, 210))
+
     mouth_closed = canvas(110, 32)
     draw_ellipse(mouth_closed, 55, 16, 48, 7, (127, 29, 29, 255))
     mouth_open = outlined_ellipse(84, 74, (127, 29, 29, 255), border=5)
@@ -80,6 +106,11 @@ def main() -> int:
         "rod.png": rod,
         "eyes_normal.png": eyes_normal,
         "eyes_angry.png": eyes_angry,
+        "eyes_closed.png": eyes_closed,
+        "eyes_sad.png": eyes_sad,
+        "eyes_surprised.png": eyes_surprised,
+        "blush.png": blush,
+        "tears.png": tears,
         "mouth_closed.png": mouth_closed,
         "mouth_open.png": mouth_open,
     }
