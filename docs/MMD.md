@@ -28,6 +28,18 @@ Check the environment:
 
 ## 2. Prepare files without committing licensed model data
 
+For a learning-only demo, download the pinned Miku v2 PMD model directly from the Three.js
+upstream mirror after reviewing its bundled rules and Piapro's non-commercial terms:
+
+```bash
+python3 scripts/download_learning_mmd_model.py --accept-noncommercial-license
+```
+
+This downloads the model, eye texture, upstream asset notice, and original Japanese readme into
+the ignored `assets/characters/mmd_demo/source/` directory. The model is not copied into this Git
+repository. The sample manifests already point to `character.pmd`; MMD Tools supports both PMD
+and PMX.
+
 Use the sample manifests as templates:
 
 ```text

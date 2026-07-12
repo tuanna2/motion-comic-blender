@@ -3,7 +3,7 @@
   "id": "char_mmd_demo",
   "version": 1,
   "type": "mmd_character",
-  "source": "source/character.pmx",
+  "source": "source/character.pmd",
   "blend": "compiled/character.blend",
   "collection": "CHARACTER",
   "root_object": "MMD_Root",

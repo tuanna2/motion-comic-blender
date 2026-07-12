@@ -32,15 +32,20 @@ def main() -> int:
         raise ValueError("manifest type must be action_library")
     reference_model = data.get("reference_model")
     if not isinstance(reference_model, str) or not reference_model:
-        raise ValueError("action_library manifest needs reference_model PMX")
-    pmx_path = (manifest_path.parent / reference_model).resolve()
+        raise ValueError("action_library manifest needs reference_model PMX or PMD")
+    model_path = (manifest_path.parent / reference_model).resolve()
+    if not model_path.is_file():
+        raise FileNotFoundError(
+            f"reference MMD model not found: {model_path}. "
+            "For the learning demo run scripts/download_learning_mmd_model.py first."
+        )
     output_path = (manifest_path.parent / str(data["blend"])).resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     require_mmd_tools()
 
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
-    bpy.ops.mmd_tools.import_model(filepath=str(pmx_path), scale=float(data.get("import_scale", 0.08)))
+    bpy.ops.mmd_tools.import_model(filepath=str(model_path), scale=float(data.get("import_scale", 0.08)))
     armature = next((obj for obj in bpy.context.scene.objects if obj.type == "ARMATURE"), None)
     if armature is None:
         raise RuntimeError("reference PMX imported no armature")

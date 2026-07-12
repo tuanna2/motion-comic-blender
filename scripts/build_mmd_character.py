@@ -45,17 +45,20 @@ def main() -> int:
         raise ValueError("manifest type must be mmd_character")
     source = data.get("source")
     if not isinstance(source, str) or not source:
-        raise ValueError("mmd_character manifest needs source PMX for compilation")
-    pmx_path = (manifest_path.parent / source).resolve()
-    if not pmx_path.is_file():
-        raise FileNotFoundError(f"PMX source not found: {pmx_path}")
+        raise ValueError("mmd_character manifest needs a source PMX or PMD for compilation")
+    model_path = (manifest_path.parent / source).resolve()
+    if not model_path.is_file():
+        raise FileNotFoundError(
+            f"MMD model source not found: {model_path}. "
+            "For the learning demo run scripts/download_learning_mmd_model.py first."
+        )
     output_path = (manifest_path.parent / str(data["blend"])).resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     require_mmd_tools()
     reset_scene()
     before = set(bpy.data.objects)
-    bpy.ops.mmd_tools.import_model(filepath=str(pmx_path), scale=float(data.get("import_scale", 0.08)))
+    bpy.ops.mmd_tools.import_model(filepath=str(model_path), scale=float(data.get("import_scale", 0.08)))
     imported = [obj for obj in bpy.data.objects if obj not in before]
     armatures = [obj for obj in imported if obj.type == "ARMATURE"]
     if not armatures:
