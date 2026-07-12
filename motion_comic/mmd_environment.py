@@ -22,12 +22,16 @@ def operator_registered(name: str) -> bool:
     try:
         getattr(getattr(bpy.ops, namespace), operator).get_rna_type()
         return True
-    except (AttributeError, RuntimeError):
+    except (AttributeError, KeyError, RuntimeError):
         return False
 
 
 def _candidate_modules() -> list[str]:
-    modules = addon_utils.modules(refresh=True)
+    try:
+        modules = addon_utils.modules(refresh=True)
+    except TypeError:
+        # Some Blender releases expose modules() without the refresh keyword.
+        modules = addon_utils.modules()
     candidates = [module.__name__ for module in modules if "mmd_tools" in module.__name__.lower()]
     # Preserve preference keys too; Blender Extensions commonly use a bl_ext.* module id.
     candidates.extend(
