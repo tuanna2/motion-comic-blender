@@ -4,7 +4,7 @@
   "version": 1,
   "type": "action_library",
   "blend": "compiled/humanoid_actions.blend",
-  "reference_model": "source/reference.pmx",
+  "reference_model": "../../characters/mmd_demo/source/character.pmx",
   "import_scale": 0.08,
   "default_fallback": "idle",
   "sample_motion_source": "Gengorou-C/KAIMyEntity-C requiredFiles release",
