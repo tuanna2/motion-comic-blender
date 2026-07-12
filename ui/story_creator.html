@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Motion Comic Story Creator</title>
+  <title>Motion Comic Studio</title>
   <style>
-    :root { color-scheme: dark; --bg:#090d18; --panel:#111827; --line:#29364d; --text:#e5e7eb; --muted:#94a3b8; --accent:#38bdf8; --good:#34d399; --bad:#fb7185; }
-    * { box-sizing: border-box; }
+    :root { color-scheme:dark; --bg:#090d18; --panel:#111827; --line:#29364d; --text:#e5e7eb; --muted:#94a3b8; --accent:#38bdf8; --good:#34d399; --bad:#fb7185; }
+    * { box-sizing:border-box; }
     body { margin:0; background:linear-gradient(145deg,#07111f,#111827 55%,#1e1b4b); color:var(--text); font:15px/1.5 system-ui,-apple-system,sans-serif; }
-    header { padding:28px max(24px,calc((100vw - 1280px)/2)); border-bottom:1px solid var(--line); background:#090d18d9; position:sticky; top:0; backdrop-filter:blur(12px); z-index:5; }
+    header { padding:24px max(24px,calc((100vw - 1320px)/2)); border-bottom:1px solid var(--line); background:#090d18e8; position:sticky; top:0; backdrop-filter:blur(12px); z-index:5; }
     h1 { margin:0; font-size:24px; } header p { margin:5px 0 0; color:var(--muted); }
-    main { max-width:1280px; margin:auto; padding:24px; display:grid; gap:20px; }
+    main { max-width:1320px; margin:auto; padding:24px; display:grid; gap:20px; }
     section { background:#111827e8; border:1px solid var(--line); border-radius:16px; padding:20px; box-shadow:0 18px 40px #0004; }
     h2 { margin:0 0 14px; font-size:18px; }
     .characters { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
@@ -23,134 +23,124 @@
     .wide { grid-column:1/-1; }
     label { display:block; color:#cbd5e1; font-weight:650; margin-bottom:6px; }
     input,select,textarea { width:100%; border:1px solid var(--line); background:#070d18; color:var(--text); border-radius:10px; padding:11px 12px; font:inherit; }
-    textarea { resize:vertical; min-height:110px; } #prompt { min-height:360px; font:12px/1.45 ui-monospace,SFMono-Regular,monospace; } #aiResult { min-height:300px; font:12px/1.45 ui-monospace,SFMono-Regular,monospace; }
+    input[type=checkbox] { width:auto; margin-right:8px; }
+    textarea { resize:vertical; min-height:120px; }
+    .code { min-height:320px; font:12px/1.45 ui-monospace,SFMono-Regular,monospace; }
+    #storyboardPrompt { min-height:420px; }
     .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
-    button { border:0; border-radius:10px; padding:11px 15px; font-weight:750; cursor:pointer; background:var(--accent); color:#062033; }
-    button.secondary { background:#243147; color:var(--text); } button.good { background:var(--good); color:#05281e; } button:disabled { opacity:.45; cursor:not-allowed; }
-    .status { margin-top:12px; border-radius:10px; padding:11px 13px; display:none; white-space:pre-wrap; }
+    button,.button-link { border:0; border-radius:10px; padding:11px 15px; font-weight:750; cursor:pointer; background:var(--accent); color:#062033; text-decoration:none; display:inline-block; }
+    button.secondary,.button-link.secondary { background:#243147; color:var(--text); }
+    button.good { background:var(--good); color:#05281e; }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    .status { margin-top:12px; border-radius:10px; padding:11px 13px; display:none; white-space:pre-wrap; overflow-wrap:anywhere; }
     .status.show { display:block; } .status.good { background:#064e3b66; color:#a7f3d0; } .status.bad { background:#88133766; color:#fecdd3; } .status.info { background:#0c4a6e66; color:#bae6fd; }
     .hint { color:var(--muted); font-size:13px; margin-top:7px; }
+    .step-note { padding:10px 12px; border-left:3px solid var(--accent); background:#07111f; color:#cbd5e1; margin-bottom:14px; }
+    .checks { display:flex; flex-wrap:wrap; gap:16px; margin-top:10px; }
+    .checks label { font-weight:500; display:flex; align-items:center; }
+    video { width:100%; max-height:620px; margin-top:14px; border-radius:12px; background:#000; display:none; }
     @media (max-width:760px) { .grid { grid-template-columns:1fr; } .wide { grid-column:auto; } header { position:static; } }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Motion Comic Story Creator</h1>
-    <p id="seriesTitle">Đang tải series…</p>
-  </header>
-  <main>
-    <section>
-      <h2>1. Năm nhân vật cố định</h2>
-      <div id="characters" class="characters"></div>
-    </section>
+<header>
+  <h1>Motion Comic Studio</h1>
+  <p id="seriesTitle">Đang tải series…</p>
+</header>
+<main>
+  <section>
+    <h2>1. Nhân vật cố định</h2>
+    <div id="characters" class="characters"></div>
+  </section>
 
-    <section>
-      <h2>2. Tạo prompt viết truyện</h2>
-      <div class="grid">
-        <div>
-          <label for="minutes">Thời lượng TTS</label>
-          <select id="minutes">
-            <option value="10">10 phút</option><option value="15" selected>15 phút</option>
-            <option value="20">20 phút</option><option value="25">25 phút</option><option value="30">30 phút</option>
-          </select>
-        </div>
-        <div>
-          <label for="narrationMode">Ngôi kể</label>
-          <select id="narrationMode">
-            <option value="first_person">Ngôi thứ nhất</option>
-            <option value="third_person">Ngôi thứ ba / người dẫn chuyện</option>
-          </select>
-        </div>
-        <div>
-          <label for="protagonist">Nhân vật chính</label>
-          <select id="protagonist"></select>
-        </div>
-        <div>
-          <label for="genre">Thể loại</label>
-          <input id="genre" value="đô thị, bí ẩn, trùng sinh, kinh dị, tình cảm">
-        </div>
-        <div class="wide">
-          <label for="premise">Ý tưởng hoặc yêu cầu tập này</label>
-          <textarea id="premise" placeholder="Ví dụ: Minh Khang tỉnh lại trước ngày vụ cháy xảy ra và phát hiện An Nhiên cũng nhớ được kiếp trước…"></textarea>
-        </div>
-      </div>
-      <div class="actions">
-        <button id="generatePrompt">Tạo prompt</button>
-        <button id="copyPrompt" class="secondary" disabled>Copy prompt</button>
-      </div>
-      <div id="promptStatus" class="status"></div>
-      <label for="prompt" style="margin-top:14px">Prompt để gửi vào ChatGPT/AI khác</label>
-      <textarea id="prompt" readonly placeholder="Bấm “Tạo prompt”…"></textarea>
-    </section>
+  <section>
+    <h2>2. Tạo prompt viết truyện</h2>
+    <div class="grid">
+      <div><label for="minutes">Thời lượng TTS</label><select id="minutes"><option value="10">10 phút</option><option value="15" selected>15 phút</option><option value="20">20 phút</option><option value="25">25 phút</option><option value="30">30 phút</option></select></div>
+      <div><label for="narrationMode">Ngôi kể</label><select id="narrationMode"><option value="first_person">Ngôi thứ nhất</option><option value="third_person">Ngôi thứ ba / người dẫn chuyện</option></select></div>
+      <div><label for="protagonist">Nhân vật chính</label><select id="protagonist"></select></div>
+      <div><label for="genre">Thể loại</label><input id="genre" value="đô thị, bí ẩn, trùng sinh, kinh dị, tình cảm"></div>
+      <div class="wide"><label for="premise">Ý tưởng hoặc yêu cầu tập này</label><textarea id="premise" placeholder="Ví dụ: Minh Khang tỉnh lại trước ngày vụ cháy xảy ra…"></textarea></div>
+    </div>
+    <div class="actions"><button id="generatePrompt">Tạo prompt truyện</button><button id="copyPrompt" class="secondary" disabled>Copy prompt</button></div>
+    <div id="promptStatus" class="status"></div>
+    <label for="prompt" style="margin-top:14px">Prompt gửi vào AI</label>
+    <textarea id="prompt" class="code" readonly></textarea>
+  </section>
 
-    <section>
-      <h2>3. Paste kết quả AI</h2>
-      <label for="aiResult">Story source JSON</label>
-      <textarea id="aiResult" placeholder='Paste JSON AI trả về, bắt đầu bằng { và kết thúc bằng }'></textarea>
-      <div class="actions">
-        <button id="validateResult" class="good">Kiểm tra kết quả</button>
-        <button id="downloadResult" class="secondary" disabled>Tải story_source.json</button>
-      </div>
-      <div id="validationStatus" class="status"></div>
-      <p class="hint">UI kiểm tra series ID, narrator, danh sách nhân vật, thời lượng và độ dài nội dung. JSON hợp lệ mới được tải xuống.</p>
-    </section>
-  </main>
-  <script>
-    let series = null;
-    let validStory = null;
-    const $ = id => document.getElementById(id);
-    function showStatus(element, message, type) {
-      element.textContent = message; element.className = `status show ${type}`;
-    }
-    async function loadSeries() {
-      const response = await fetch('/api/series'); series = await response.json();
-      $('seriesTitle').textContent = `${series.title} · ${series.characters.length} nhân vật chính · ${series.language}`;
-      $('characters').innerHTML = series.characters.map(character => {
-        const colors = character.visual.palette.map(color => `<span class="swatch" style="background:${color}"></span>`).join('');
-        const voice = character.voice_profiles.dialogue;
-        return `<article class="card" style="--character-color:${character.visual.palette[0]}">
-          <h3>${character.name}</h3><div class="role">${character.role}</div>
-          <div class="swatches">${colors}</div><p>${character.story_function}</p>
-          <div class="voice">${voice.voice}<br>rate ${voice.rate} · pitch ${voice.pitch}</div>
-        </article>`;
-      }).join('');
-      $('protagonist').innerHTML = series.characters.map(character => `<option value="${character.id}">${character.name}</option>`).join('');
-      $('protagonist').value = series.story_rules.default_protagonist_id;
-    }
-    $('generatePrompt').addEventListener('click', async () => {
-      showStatus($('promptStatus'), 'Đang tạo prompt…', 'info');
-      const response = await fetch('/api/prompt', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
-        minutes:Number($('minutes').value), narration_mode:$('narrationMode').value,
-        protagonist_id:$('protagonist').value, genre:$('genre').value, premise:$('premise').value
-      })});
-      const data = await response.json();
-      if (!response.ok) return showStatus($('promptStatus'), data.error || 'Không tạo được prompt', 'bad');
-      $('prompt').value = data.prompt; $('copyPrompt').disabled = false;
-      showStatus($('promptStatus'), `Đã tạo prompt ${data.prompt.length.toLocaleString()} ký tự.`, 'good');
-    });
-    $('copyPrompt').addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText($('prompt').value); }
-      catch { $('prompt').select(); document.execCommand('copy'); }
-      showStatus($('promptStatus'), 'Đã copy prompt.', 'good');
-    });
-    $('validateResult').addEventListener('click', async () => {
-      validStory = null; $('downloadResult').disabled = true;
-      const response = await fetch('/api/validate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({story_source:$('aiResult').value}) });
-      const data = await response.json();
-      if (!response.ok) return showStatus($('validationStatus'), `JSON không đọc được: ${data.error}`, 'bad');
-      const details = [`Số từ: ${data.word_count}`, `Ước tính TTS: ${data.estimated_minutes} phút`];
-      if (data.warnings.length) details.push(`Cảnh báo:\n- ${data.warnings.join('\n- ')}`);
-      if (!data.valid) return showStatus($('validationStatus'), `Không hợp lệ:\n- ${data.errors.join('\n- ')}\n\n${details.join('\n')}`, 'bad');
-      validStory = data.story_source; $('downloadResult').disabled = false;
-      showStatus($('validationStatus'), `Hợp lệ.\n${details.join('\n')}`, data.warnings.length ? 'info' : 'good');
-    });
-    $('downloadResult').addEventListener('click', () => {
-      if (!validStory) return;
-      const blob = new Blob([JSON.stringify(validStory, null, 2) + '\n'], {type:'application/json'});
-      const link = document.createElement('a'); link.href = URL.createObjectURL(blob);
-      link.download = 'story_source.json'; link.click(); URL.revokeObjectURL(link.href);
-    });
-    loadSeries().catch(error => showStatus($('promptStatus'), `Không tải được series: ${error}`, 'bad'));
-  </script>
+  <section>
+    <h2>3. Paste và kiểm tra story_source.json</h2>
+    <label for="aiResult">Story source JSON</label>
+    <textarea id="aiResult" class="code" placeholder="Paste JSON truyện AI trả về"></textarea>
+    <div class="actions"><button id="validateResult" class="good">Kiểm tra story source</button><button id="downloadResult" class="secondary" disabled>Tải story_source.json</button></div>
+    <div id="validationStatus" class="status"></div>
+  </section>
+
+  <section>
+    <h2>4. Tạo prompt chia storyboard</h2>
+    <div class="step-note">Nút này dùng story source hợp lệ ở bước 3 để tạo prompt bắt AI trả về JSON đúng schema Blender, action catalog và voice từng nhân vật.</div>
+    <div class="actions"><button id="generateStoryboardPrompt" disabled>Tạo prompt storyboard</button><button id="copyStoryboardPrompt" class="secondary" disabled>Copy prompt storyboard</button></div>
+    <div id="storyboardPromptStatus" class="status"></div>
+    <label for="storyboardPrompt" style="margin-top:14px">Prompt storyboard</label>
+    <textarea id="storyboardPrompt" class="code" readonly></textarea>
+  </section>
+
+  <section>
+    <h2>5. Paste và kiểm tra storyboard.json</h2>
+    <label for="storyboardResult">Storyboard JSON AI trả về</label>
+    <textarea id="storyboardResult" class="code" placeholder="Paste JSON có settings và scenes"></textarea>
+    <div class="actions"><button id="validateStoryboard" class="good">Kiểm tra storyboard</button><button id="downloadStoryboard" class="secondary" disabled>Tải storyboard.json</button></div>
+    <div id="storyboardValidationStatus" class="status"></div>
+    <p class="hint">Validator kiểm tra scene duration, element, action, subtitle, speaker, độ phủ nội dung truyện và asset còn thiếu.</p>
+  </section>
+
+  <section>
+    <h2>6. Render Blender trên UI</h2>
+    <div class="grid">
+      <div class="wide"><label for="blenderBin">Đường dẫn Blender (có thể để trống)</label><input id="blenderBin" placeholder="/Applications/Blender.app/Contents/MacOS/Blender"></div>
+    </div>
+    <div class="checks">
+      <label><input id="withTts" type="checkbox" checked>Tạo Edge-TTS và lip sync</label>
+      <label><input id="placeholderAssets" type="checkbox" checked>Dùng char_angler làm placeholder khi thiếu PNG nhân vật</label>
+      <label><input id="keepFrames" type="checkbox">Giữ PNG frames trung gian</label>
+    </div>
+    <div class="actions"><button id="startRender" disabled>Render video</button><a id="downloadVideo" class="button-link secondary" style="display:none">Tải MP4</a><a id="downloadBlend" class="button-link secondary" style="display:none">Tải .blend</a><a id="downloadLog" class="button-link secondary" style="display:none">Xem log</a></div>
+    <div id="renderStatus" class="status"></div>
+    <video id="videoPreview" controls></video>
+    <p class="hint">Render chạy thành job nền trong tiến trình UI. Kết quả nằm trong output/ui_jobs/&lt;job_id&gt;/.</p>
+  </section>
+</main>
+<script>
+  let series=null, validStory=null, validStoryboard=null, activeJob=null, pollTimer=null;
+  const $=id=>document.getElementById(id);
+  function showStatus(el,msg,type){ el.textContent=msg; el.className=`status show ${type}`; }
+  function downloadJson(value,name){ const blob=new Blob([JSON.stringify(value,null,2)+'\n'],{type:'application/json'}); const link=document.createElement('a'); link.href=URL.createObjectURL(blob); link.download=name; link.click(); URL.revokeObjectURL(link.href); }
+  async function post(url,body){ const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); const data=await response.json(); if(!response.ok) throw new Error(data.error||`HTTP ${response.status}`); return data; }
+  async function copy(text,status){ try{await navigator.clipboard.writeText(text);}catch{const temp=document.createElement('textarea');temp.value=text;document.body.appendChild(temp);temp.select();document.execCommand('copy');temp.remove();} showStatus(status,'Đã copy.','good'); }
+
+  async function loadSeries(){
+    const response=await fetch('/api/series'); series=await response.json();
+    $('seriesTitle').textContent=`${series.title} · ${series.characters.length} nhân vật chính · ${series.language}`;
+    $('characters').innerHTML=series.characters.map(c=>{ const colors=c.visual.palette.map(color=>`<span class="swatch" style="background:${color}"></span>`).join(''); const voice=c.voice_profiles.dialogue; return `<article class="card" style="--character-color:${c.visual.palette[0]}"><h3>${c.name}</h3><div class="role">${c.role}</div><div class="swatches">${colors}</div><p>${c.story_function}</p><div class="voice">${voice.voice}<br>rate ${voice.rate} · pitch ${voice.pitch}<br>asset: ${c.visual.asset_status}</div></article>`; }).join('');
+    $('protagonist').innerHTML=series.characters.map(c=>`<option value="${c.id}">${c.name}</option>`).join(''); $('protagonist').value=series.story_rules.default_protagonist_id;
+  }
+
+  $('generatePrompt').onclick=async()=>{ try{showStatus($('promptStatus'),'Đang tạo prompt…','info'); const data=await post('/api/prompt',{minutes:Number($('minutes').value),narration_mode:$('narrationMode').value,protagonist_id:$('protagonist').value,genre:$('genre').value,premise:$('premise').value}); $('prompt').value=data.prompt; $('copyPrompt').disabled=false; showStatus($('promptStatus'),`Đã tạo ${data.prompt.length.toLocaleString()} ký tự.`,'good');}catch(e){showStatus($('promptStatus'),e.message,'bad');}};
+  $('copyPrompt').onclick=()=>copy($('prompt').value,$('promptStatus'));
+  $('validateResult').onclick=async()=>{ validStory=null; validStoryboard=null; $('downloadResult').disabled=true; $('generateStoryboardPrompt').disabled=true; $('startRender').disabled=true; try{const data=await post('/api/validate',{story_source:$('aiResult').value}); const details=[`Số từ: ${data.word_count}`,`Ước tính TTS: ${data.estimated_minutes} phút`]; if(data.warnings.length)details.push(`Cảnh báo:\n- ${data.warnings.join('\n- ')}`); if(!data.valid)return showStatus($('validationStatus'),`Không hợp lệ:\n- ${data.errors.join('\n- ')}\n\n${details.join('\n')}`,'bad'); validStory=data.story_source; $('downloadResult').disabled=false; $('generateStoryboardPrompt').disabled=false; showStatus($('validationStatus'),`Hợp lệ.\n${details.join('\n')}`,data.warnings.length?'info':'good');}catch(e){showStatus($('validationStatus'),`JSON không đọc được: ${e.message}`,'bad');}};
+  $('downloadResult').onclick=()=>validStory&&downloadJson(validStory,'story_source.json');
+
+  $('generateStoryboardPrompt').onclick=async()=>{ try{showStatus($('storyboardPromptStatus'),'Đang tạo prompt storyboard…','info'); const data=await post('/api/storyboard-prompt',{story_source:validStory}); $('storyboardPrompt').value=data.prompt; $('copyStoryboardPrompt').disabled=false; showStatus($('storyboardPromptStatus'),`Đã tạo ${data.prompt.length.toLocaleString()} ký tự. Copy sang AI rồi paste JSON ở bước 5.`,'good');}catch(e){showStatus($('storyboardPromptStatus'),e.message,'bad');}};
+  $('copyStoryboardPrompt').onclick=()=>copy($('storyboardPrompt').value,$('storyboardPromptStatus'));
+
+  $('validateStoryboard').onclick=async()=>{ validStoryboard=null; $('downloadStoryboard').disabled=true; $('startRender').disabled=true; try{const data=await post('/api/validate-storyboard',{storyboard:$('storyboardResult').value,story_source:validStory}); const details=[`Scenes: ${data.scene_count}`,`Duration: ${(data.duration_seconds/60).toFixed(2)} phút`,`Subtitles: ${data.subtitle_count}`,`Độ phủ story source: ${data.text_coverage}%`]; if(data.warnings.length)details.push(`Cảnh báo:\n- ${data.warnings.join('\n- ')}`); if(!data.valid)return showStatus($('storyboardValidationStatus'),`Không hợp lệ:\n- ${data.errors.join('\n- ')}\n\n${details.join('\n')}`,'bad'); validStoryboard=data.storyboard; $('downloadStoryboard').disabled=false; $('startRender').disabled=false; showStatus($('storyboardValidationStatus'),`Hợp lệ.\n${details.join('\n')}`,data.warnings.length?'info':'good');}catch(e){showStatus($('storyboardValidationStatus'),e.message,'bad');}};
+  $('downloadStoryboard').onclick=()=>validStoryboard&&downloadJson(validStoryboard,'storyboard.json');
+
+  function fileUrl(kind){return `/api/render-file?job_id=${encodeURIComponent(activeJob)}&kind=${kind}`;}
+  async function pollRender(){ if(!activeJob)return; try{const response=await fetch(`/api/render-status?job_id=${encodeURIComponent(activeJob)}`); const data=await response.json(); if(!response.ok)throw new Error(data.error); const lines=[`Job: ${data.job_id}`,`Trạng thái: ${data.status}`,`Bước: ${data.stage}`,data.progress_message]; if(data.warnings.length)lines.push(`Cảnh báo:\n- ${data.warnings.join('\n- ')}`); if(data.error)lines.push(`Lỗi: ${data.error}`); showStatus($('renderStatus'),lines.join('\n'),data.status==='failed'?'bad':data.status==='completed'?'good':'info'); if(data.log_ready){$('downloadLog').href=fileUrl('log');$('downloadLog').style.display='inline-block';} if(data.status==='completed'){clearInterval(pollTimer); $('startRender').disabled=false; $('downloadVideo').href=fileUrl('video');$('downloadVideo').download='episode.mp4';$('downloadVideo').style.display='inline-block'; if(data.blend_ready){$('downloadBlend').href=fileUrl('blend');$('downloadBlend').download='episode.blend';$('downloadBlend').style.display='inline-block';} const video=$('videoPreview');video.src=fileUrl('video');video.style.display='block';} else if(data.status==='failed'){clearInterval(pollTimer);$('startRender').disabled=false;}}catch(e){showStatus($('renderStatus'),e.message,'bad');}}
+  $('startRender').onclick=async()=>{ if(!validStoryboard)return; $('startRender').disabled=true; $('downloadVideo').style.display='none';$('downloadBlend').style.display='none';$('downloadLog').style.display='none';$('videoPreview').style.display='none'; try{const data=await post('/api/render',{storyboard:validStoryboard,story_source:validStory,with_tts:$('withTts').checked,placeholder_missing_assets:$('placeholderAssets').checked,keep_frames:$('keepFrames').checked,blender_bin:$('blenderBin').value}); activeJob=data.job_id; showStatus($('renderStatus'),`Đã tạo job ${activeJob}.`,'info'); clearInterval(pollTimer);pollTimer=setInterval(pollRender,2000);pollRender();}catch(e){$('startRender').disabled=false;showStatus($('renderStatus'),e.message,'bad');}};
+
+  loadSeries().catch(error=>showStatus($('promptStatus'),`Không tải được series: ${error}`,'bad'));
+</script>
 </body>
 </html>
