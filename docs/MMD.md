@@ -45,8 +45,12 @@ assets/actions/humanoid_mmd/
   compiled/humanoid_actions.blend
 ```
 
-The repository intentionally contains no PMX, VMD, textures, or compiled model `.blend` files.
-Confirm the model, motion, texture, and redistribution licenses before production use.
+The repository intentionally contains no PMX, model textures, or compiled model `.blend` files.
+Confirm the model, texture, and any additional motion licenses before production use.
+
+The repository now includes a small redistributable sample VMD set under
+`assets/actions/humanoid_mmd/source/`. Its provenance and exact filename mapping are recorded in
+`assets/actions/humanoid_mmd/SOURCE.md`. A PMX reference model is still not bundled.
 
 ## 3. Compile once
 

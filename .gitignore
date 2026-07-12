@@ -7,5 +7,5 @@ output/
 assets/**/generated/*.png
 assets/characters/mmd_demo/source/
 assets/characters/mmd_demo/compiled/
-assets/actions/humanoid_mmd/source/
 assets/actions/humanoid_mmd/compiled/
+assets/actions/humanoid_mmd/source/reference.pmx
