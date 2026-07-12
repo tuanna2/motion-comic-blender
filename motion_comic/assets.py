@@ -145,6 +145,11 @@ class AssetBundle:
     initial_visibility: dict[str, bool] = field(default_factory=dict)
     anchors: dict[str, tuple[float, float]] = field(default_factory=dict)
     anchor_parents: dict[str, Any] = field(default_factory=dict)
+    backend: str = "sprite2d"
+    armature: Any | None = None
+    morphs: dict[str, Any] = field(default_factory=dict)
+    action_set: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 def _parent(child, parent, location) -> None:
@@ -368,7 +373,16 @@ def create_element(
     if kind == "character":
         if asset_registry is None:
             raise ValueError("character elements require a configured asset library")
-        return create_layered_character(name, element, asset_registry)
+        manifest = asset_registry.resolve(str(element["asset_ref"]))
+        if manifest.asset_type == "layered_character":
+            return create_layered_character(name, element, asset_registry)
+        if manifest.asset_type == "mmd_character":
+            from .mmd_assets import create_mmd_character
+
+            return create_mmd_character(name, element, asset_registry, manifest=manifest)
+        raise ValueError(
+            f"character asset {manifest.reference} has unsupported type {manifest.asset_type!r}"
+        )
     if kind == "prop":
         if asset_registry is None:
             raise ValueError("prop elements require a configured asset library")

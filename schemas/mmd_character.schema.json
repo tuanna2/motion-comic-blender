@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motion-comic.local/schemas/mmd_character.schema.json",
+  "title": "Compiled MMD character manifest",
+  "type": "object",
+  "required": ["schema_version", "id", "version", "type", "blend", "collection", "armature", "action_set"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "id": {"type": "string", "minLength": 1},
+    "version": {"type": "integer", "minimum": 1},
+    "type": {"const": "mmd_character"},
+    "source": {"type": "string", "minLength": 1},
+    "blend": {"type": "string", "minLength": 1},
+    "collection": {"type": "string", "minLength": 1},
+    "root_object": {"type": "string", "minLength": 1},
+    "armature": {"type": "string", "minLength": 1},
+    "scale": {"type": "number", "exclusiveMinimum": 0},
+    "disable_physics": {"type": "boolean"},
+    "morphs": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {"type": "string", "minLength": 1},
+          {"type": "array", "items": {"type": "string", "minLength": 1}},
+          {"type": "null"}
+        ]
+      }
+    },
+    "action_set": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": true
+}

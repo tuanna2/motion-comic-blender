@@ -12,6 +12,7 @@ animations. Transparent PNG assets are supported for replacing the placeholders 
 - Orthographic 2D/2.5D scene composition
 - Transparent PNG loader with alpha materials
 - Versioned character library with `manifest.json` and `asset_ref`
+- MMD character backend with precompiled PMX collections and NLA Action libraries
 - Layered character expressions, anchors, and mouth sprite swapping
 - Hierarchical two-arm 2D character rig with head, shoulders, elbows, hips, and knees
 - Reusable scene templates with named slots and automatic collision-safe placement
@@ -22,6 +23,7 @@ animations. Transparent PNG assets are supported for replacing the placeholders 
 - Timed subtitles
 - Cached Edge-TTS voice generation and WordBoundary-driven mouth animation
 - FFmpeg audio timeline mixing and H.264/AAC MP4 output
+- Direct FFmpeg pipe encoding without retaining thousands of PNG frames
 - Batch queue with shared cache, resume, retries, parallel workers, and status JSON
 - Series registry with fixed character identities and distinct voice profiles
 - Local AI story-creation UI with prompt copy and result validation
@@ -35,9 +37,9 @@ animations. Transparent PNG assets are supported for replacing the placeholders 
 - Python 3.11+ for validation, asset generation, and Edge-TTS
 - Internet access when synthesizing uncached dialogue
 
-Blender renders lossless PNG frames, then the external FFmpeg CLI encodes them
-to H.264/AAC MP4. This works with Blender 5.x builds that do not expose
-`FFMPEG` as a direct render format. Edge-TTS runs in the system Python before
+Blender streams each completed frame through an external FFmpeg pipe into an
+H.264/AAC MP4. Only one temporary PNG exists at a time. This works with Blender
+5.x builds that do not expose `FFMPEG` as a direct render format. Edge-TTS runs in the system Python before
 Blender, so no package needs to be installed into Blender's bundled Python.
 
 ## Render the demo on macOS
@@ -542,3 +544,28 @@ tests/                     Blender-independent unit tests
 ## License
 
 MIT
+## Direct MP4 rendering
+
+Direct encoding is now the default. Blender renders one temporary PNG at a time and streams it
+straight into external FFmpeg, so a long episode no longer leaves tens of thousands of frames on
+disk. This works even on Blender builds that do not expose `FFMPEG` in
+`scene.render.image_settings.file_format`.
+
+```bash
+blender --background --python scripts/render_storyboard.py -- \
+  examples/fishing/storyboard.json --output output/fishing.mp4
+```
+
+Use `--render-mode frames --keep-frames` only for resumable or frame-level debugging. Render logs
+report progress every five seconds of video.
+
+Camera location, rotation, and orthographic scale are reset at the beginning of every scene. This
+prevents repeated pan/follow actions from accumulating until the camera leaves the background.
+Background planes use overscan to keep shake and modest pan actions covered.
+
+## MMD character backend
+
+The JSON runner supports `mmd_character` and `action_library` manifests alongside the existing
+layered PNG backend. Precompiled Blender Actions are composed through NLA tracks; PMX/VMD import is
+an offline asset-build step. MikuMikuRig is optional for interactive authoring and is not a runtime
+dependency. See [docs/MMD.md](docs/MMD.md).

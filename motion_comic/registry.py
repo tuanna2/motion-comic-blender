@@ -80,12 +80,48 @@ class AssetRegistry:
         if not isinstance(version, int) or version < 1:
             raise AssetRegistryError(f"manifest version must be a positive integer: {path}")
         asset_type = data.get("type")
-        if asset_type not in {"layered_character", "sprite_prop", "scene_template"}:
+        if asset_type not in {
+            "layered_character",
+            "mmd_character",
+            "action_library",
+            "sprite_prop",
+            "scene_template",
+        }:
             raise AssetRegistryError(f"unsupported manifest type in {path}: {asset_type!r}")
         if asset_type == "layered_character":
             appearances = data.get("appearances")
             if not isinstance(appearances, dict) or not appearances:
                 raise AssetRegistryError(f"manifest appearances are required: {path}")
+        elif asset_type == "mmd_character":
+            for field_name in ("blend", "collection", "armature", "action_set"):
+                if not isinstance(data.get(field_name), str) or not data[field_name]:
+                    raise AssetRegistryError(
+                        f"mmd character {field_name} is required: {path}"
+                    )
+            morphs = data.get("morphs", {})
+            if not isinstance(morphs, dict):
+                raise AssetRegistryError(f"mmd character morphs must be an object: {path}")
+        elif asset_type == "action_library":
+            if not isinstance(data.get("blend"), str) or not data["blend"]:
+                raise AssetRegistryError(f"action library blend is required: {path}")
+            actions = data.get("actions")
+            if not isinstance(actions, dict) or not actions:
+                raise AssetRegistryError(f"action library actions are required: {path}")
+            for action_key, definition in actions.items():
+                if not isinstance(action_key, str) or not isinstance(definition, dict):
+                    raise AssetRegistryError(
+                        f"action library entries must be objects: {path}"
+                    )
+                has_action = isinstance(definition.get("action"), str) and bool(
+                    definition["action"]
+                )
+                has_fallback = isinstance(definition.get("fallback"), str) and bool(
+                    definition["fallback"]
+                )
+                if not has_action and not has_fallback:
+                    raise AssetRegistryError(
+                        f"action {action_key!r} needs action or fallback: {path}"
+                    )
         elif asset_type == "sprite_prop":
             if not isinstance(data.get("asset"), str) or not data["asset"]:
                 raise AssetRegistryError(f"sprite prop asset is required: {path}")

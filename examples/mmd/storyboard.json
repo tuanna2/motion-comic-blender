@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "title": "MMD JSON/NLA demo",
+  "settings": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30,
+    "world_height": 9,
+    "samples": 16,
+    "asset_library": "../../assets",
+    "scene_mode": "mmd_3d"
+  },
+  "scenes": [
+    {
+      "id": "mmd_intro",
+      "duration": 8,
+      "background_color": "#172554",
+      "elements": [
+        {"id": "hero", "kind": "character", "asset_ref": "char_mmd_demo@1", "x": -2, "y": 0, "z": 0, "scale": 1}
+      ],
+      "motions": [
+        {"target": "hero", "action": "walk", "start": 0, "end": 3, "params": {"distance": 2}},
+        {"target": "hero", "action": "talk", "start": 3, "end": 6, "params": {}},
+        {"target": "hero", "action": "wave", "start": 3.5, "end": 6, "params": {}},
+        {"target": "camera", "action": "camera_zoom_in", "start": 5, "end": 8, "params": {}}
+      ],
+      "subtitles": [
+        {"speaker": "hero", "start": 3, "end": 6, "text": "Xin chào, đây là nhân vật MMD chạy từ JSON."}
+      ]
+    }
+  ]
+}

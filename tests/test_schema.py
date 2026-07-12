@@ -39,6 +39,27 @@ class SchemaTests(unittest.TestCase):
     def test_part_level_rig_presets_are_supported(self):
         self.assertTrue({"walk", "wave", "look", "nod", "pull_rod"} <= SUPPORTED_PRESETS)
 
+    def test_accepts_mmd_scene_mode(self):
+        path = self.write_storyboard(
+            {
+                "version": "1.0",
+                "settings": {"scene_mode": "mmd_3d"},
+                "scenes": [{"id": "one", "duration": 1, "elements": []}],
+            }
+        )
+        self.assertEqual(load_storyboard(path).settings.scene_mode, "mmd_3d")
+
+    def test_rejects_unknown_scene_mode(self):
+        path = self.write_storyboard(
+            {
+                "version": "1.0",
+                "settings": {"scene_mode": "vr"},
+                "scenes": [{"id": "one", "duration": 1, "elements": []}],
+            }
+        )
+        with self.assertRaisesRegex(StoryboardError, "scene_mode"):
+            load_storyboard(path)
+
     def test_loads_tts_defaults_and_subtitle_speaker(self):
         path = self.write_storyboard(
             {

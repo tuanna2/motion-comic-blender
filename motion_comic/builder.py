@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import shutil
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -11,8 +12,10 @@ import bpy
 
 from .action_catalog import motion_action_key, resolve_action
 from .assets import AssetBundle, create_element, create_flat_object, create_text, hex_color
+from .backends import MMDActionBackend, SpriteActionBackend
+from .camera import camera_baseline
 from .easing import choose_render_engine
-from .encoding import encode_png_sequence
+from .encoding import encode_png_sequence, encode_png_stream
 from .effects import create_action_effect
 from .layout import resolve_scene_elements
 from .lipsync import LipCue, cue_frame_range, load_lip_sync
@@ -28,6 +31,17 @@ def reset_blender() -> None:
         for block in list(data_group):
             if block.users == 0:
                 data_group.remove(block)
+
+
+def _set_camera_baseline(camera, scene_mode: str, world_height: float, frame: int) -> None:
+    baseline = camera_baseline(scene_mode, world_height)
+    camera.location = baseline.location
+    camera.rotation_euler = baseline.rotation
+    camera.data.ortho_scale = baseline.ortho_scale
+    camera["motion_comic_scene_mode"] = scene_mode
+    camera.keyframe_insert(data_path="location", frame=frame)
+    camera.keyframe_insert(data_path="rotation_euler", frame=frame)
+    camera.data.keyframe_insert(data_path="ortho_scale", frame=frame)
 
 
 def setup_render(storyboard: Storyboard, output_path: Path):
@@ -58,9 +72,8 @@ def setup_render(storyboard: Storyboard, output_path: Path):
     camera_data = bpy.data.cameras.new("MotionComicCamera")
     camera = bpy.data.objects.new("MotionComicCamera", camera_data)
     bpy.context.scene.collection.objects.link(camera)
-    camera.location = (0, 0, 20)
     camera.data.type = "ORTHO"
-    camera.data.ortho_scale = settings.world_height
+    _set_camera_baseline(camera, settings.scene_mode, settings.world_height, 1)
     scene.camera = camera
     return scene, camera, frames_dir
 
@@ -99,6 +112,7 @@ def _apply_lip_sync(
     scene_start: int,
     scene_end: int,
     fps: int,
+    bundles: dict[str, AssetBundle],
 ) -> None:
     """Apply audio-derived word intervals to mouth sprites or a fallback mouth scale."""
     targets = sorted({cue.target for cue in cues})
@@ -108,6 +122,26 @@ def _apply_lip_sync(
         closed = registry.get(f"{target}.mouth_closed")
         opened = registry.get(f"{target}.mouth_open")
         target_cues = [cue for cue in cues if cue.target == target]
+        bundle = bundles.get(target)
+        if bundle is not None and bundle.backend == "mmd":
+            mouth_blocks = bundle.morphs.get("mouth_open", [])
+            if not mouth_blocks:
+                raise ValueError(f"MMD lip-sync target {target!r} has no mouth_open morph")
+            for block in mouth_blocks:
+                block.value = 0.0
+                block.keyframe_insert(data_path="value", frame=scene_start)
+            for cue in target_cues:
+                open_frame, close_frame = cue_frame_range(cue, scene_start, scene_end, fps)
+                if close_frame <= open_frame:
+                    continue
+                for block in mouth_blocks:
+                    block.value = 0.0
+                    block.keyframe_insert(data_path="value", frame=max(scene_start, open_frame - 1))
+                    block.value = 1.0
+                    block.keyframe_insert(data_path="value", frame=open_frame)
+                    block.value = 0.0
+                    block.keyframe_insert(data_path="value", frame=close_frame)
+            continue
         if closed is not None and opened is not None:
             _keyframe_mouth_sprites(closed, opened, scene_start, is_open=False)
             for cue in target_cues:
@@ -177,25 +211,45 @@ def _apply_attachments(
         bundle.root.rotation_euler.z += math.radians(float(attachment.get("rotation", 0)))
 
 
-def _scene_background(scene_id: str, scene_data: dict[str, Any], world_width: float, world_height: float):
+def _scene_background(
+    scene_id: str,
+    scene_data: dict[str, Any],
+    world_width: float,
+    world_height: float,
+    scene_mode: str,
+):
     color = str(scene_data.get("background_color", "#7dd3fc"))
     obj = create_flat_object(
         f"{scene_id}.background",
         color=color,
-        location=(0, 0, -2),
-        scale=(world_width, world_height, 1),
+        location=(0, 0, -2) if scene_mode == "sprite_2d" else (0, 5, world_height / 2),
+        scale=(world_width * 1.5, world_height * 1.5, 1),
     )
+    if scene_mode == "mmd_3d":
+        obj.rotation_euler.x = math.radians(90)
     return AssetBundle(root=obj, renderables=[obj])
 
 
-def _create_subtitle(scene_id: str, index: int, subtitle: dict[str, Any], world_height: float):
+def _create_subtitle(
+    scene_id: str,
+    index: int,
+    subtitle: dict[str, Any],
+    world_height: float,
+    scene_mode: str,
+):
+    if scene_mode == "sprite_2d":
+        location = (0, float(subtitle.get("y", -world_height * 0.39)), 10)
+    else:
+        location = (0, -6, float(subtitle.get("y", world_height * 0.14)))
     text = create_text(
         f"{scene_id}.subtitle.{index}",
         str(subtitle["text"]),
         color=str(subtitle.get("color", "#ffffff")),
-        location=(0, float(subtitle.get("y", -world_height * 0.39)), 10),
+        location=location,
         size=float(subtitle.get("size", 0.48)),
     )
+    if scene_mode == "mmd_3d":
+        text.rotation_euler.x = math.radians(90)
     return AssetBundle(root=text, renderables=[text])
 
 
@@ -212,6 +266,8 @@ def build_storyboard(
     world_width = world_height * aspect
     current_frame = 1
     fps = storyboard.settings.fps
+    scene_mode = storyboard.settings.scene_mode
+    action_backends = {"sprite2d": SpriteActionBackend(), "mmd": MMDActionBackend()}
     storyboard_dir = storyboard.source_path.parent
     uses_asset_library = any(
         element.get("kind") in {"character", "prop"}
@@ -228,6 +284,7 @@ def build_storyboard(
         duration_frames = round(float(scene_data["duration"]) * fps)
         scene_start = current_frame
         scene_end = current_frame + duration_frames - 1
+        _set_camera_baseline(camera, scene_mode, world_height, scene_start)
         registry: dict[str, Any] = {"camera": camera}
         bundles: dict[str, AssetBundle] = {}
 
@@ -239,7 +296,9 @@ def build_storyboard(
             template = asset_registry.resolve(str(template_ref), "scene_template")
         resolved_elements = resolve_scene_elements(scene_data.get("elements", []), template)
 
-        background = _scene_background(scene_id, scene_data, world_width, world_height)
+        background = _scene_background(
+            scene_id, scene_data, world_width, world_height, scene_mode
+        )
         _show_during(background, scene_start, scene_end)
 
         for element in resolved_elements:
@@ -290,15 +349,29 @@ def build_storyboard(
             start = scene_start + round(float(motion.get("start", 0)) * fps)
             end = scene_start + round(float(motion.get("end", scene_data["duration"])) * fps)
             end = min(scene_end, end)
-            apply_motion(
-                action_key,
-                obj,
-                start,
-                end,
-                dict(motion.get("params", {})),
-                registry=registry,
-                target=target,
-            )
+            base_target = target.split(".", 1)[0]
+            bundle = bundles.get(base_target)
+            if bundle is not None and target == base_target:
+                action_backends[bundle.backend].apply(
+                    bundle,
+                    action_key,
+                    start,
+                    end,
+                    dict(motion.get("params", {})),
+                    registry=registry,
+                    target=target,
+                    asset_registry=asset_registry,
+                )
+            else:
+                apply_motion(
+                    action_key,
+                    obj,
+                    start,
+                    end,
+                    dict(motion.get("params", {})),
+                    registry=registry,
+                    target=target,
+                )
 
         if lip_sync is not None:
             _apply_lip_sync(
@@ -307,10 +380,13 @@ def build_storyboard(
                 scene_start,
                 scene_end,
                 fps,
+                bundles,
             )
 
         for index, subtitle in enumerate(scene_data.get("subtitles", [])):
-            bundle = _create_subtitle(scene_id, index, subtitle, world_height)
+            bundle = _create_subtitle(
+                scene_id, index, subtitle, world_height, scene_mode
+            )
             subtitle_start = scene_start + round(float(subtitle.get("start", 0)) * fps)
             subtitle_end = scene_start + round(float(subtitle.get("end", scene_data["duration"])) * fps)
             _show_during(bundle, subtitle_start, min(scene_end, subtitle_end))
@@ -329,6 +405,7 @@ def render_storyboard(
     save_blend: str | Path | None = None,
     render: bool = True,
     keep_frames: bool = False,
+    render_mode: str = "direct",
     audio_path: str | Path | None = None,
     lip_sync_path: str | Path | None = None,
 ) -> Storyboard:
@@ -343,16 +420,47 @@ def render_storyboard(
         blend_path.parent.mkdir(parents=True, exist_ok=True)
         bpy.ops.wm.save_as_mainfile(filepath=str(blend_path))
     if render:
-        if frames_dir.exists():
-            shutil.rmtree(frames_dir)
-        frames_dir.mkdir(parents=True, exist_ok=True)
-        bpy.ops.render.render(animation=True)
-        encode_png_sequence(
-            frames_dir,
-            storyboard.settings.fps,
-            resolved_output,
-            audio_path=resolved_audio,
-        )
-        if not keep_frames:
-            shutil.rmtree(frames_dir)
+        if render_mode not in {"direct", "frames"}:
+            raise ValueError("render_mode must be 'direct' or 'frames'")
+        if render_mode == "frames" or keep_frames:
+            if frames_dir.exists():
+                shutil.rmtree(frames_dir)
+            frames_dir.mkdir(parents=True, exist_ok=True)
+            bpy.ops.render.render(animation=True)
+            encode_png_sequence(
+                frames_dir,
+                storyboard.settings.fps,
+                resolved_output,
+                audio_path=resolved_audio,
+            )
+            if not keep_frames:
+                shutil.rmtree(frames_dir)
+        else:
+            def rendered_pngs():
+                with tempfile.TemporaryDirectory(prefix="motion-comic-frame-") as directory:
+                    frame_path = Path(directory) / "current.png"
+                    original_path = scene.render.filepath
+                    scene.render.filepath = str(frame_path)
+                    try:
+                        total = scene.frame_end - scene.frame_start + 1
+                        for index, frame in enumerate(
+                            range(scene.frame_start, scene.frame_end + 1), start=1
+                        ):
+                            scene.frame_set(frame)
+                            bpy.ops.render.render(write_still=True)
+                            yield frame_path.read_bytes()
+                            if index == 1 or index == total or index % max(1, storyboard.settings.fps * 5) == 0:
+                                print(
+                                    f"Rendered/encoded frame {index}/{total} ({index / storyboard.settings.fps:.1f}s)",
+                                    flush=True,
+                                )
+                    finally:
+                        scene.render.filepath = original_path
+
+            encode_png_stream(
+                rendered_pngs(),
+                storyboard.settings.fps,
+                resolved_output,
+                audio_path=resolved_audio,
+            )
     return storyboard

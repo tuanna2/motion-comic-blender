@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "id": "char_mmd_demo",
+  "version": 1,
+  "type": "mmd_character",
+  "source": "source/character.pmx",
+  "blend": "compiled/character.blend",
+  "collection": "CHARACTER",
+  "root_object": "MMD_Root",
+  "armature": "MMD_Armature",
+  "scale": 1.0,
+  "disable_physics": true,
+  "morphs": {
+    "normal": null,
+    "happy": "笑い",
+    "angry": "怒り",
+    "sad": "悲しい",
+    "surprised": "びっくり",
+    "mouth_open": "あ"
+  },
+  "action_set": "actions_humanoid_mmd@1"
+}

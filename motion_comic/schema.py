@@ -44,6 +44,7 @@ class RenderSettings:
     background_color: str = "#111827"
     samples: int = 16
     asset_library: str = "assets"
+    scene_mode: str = "sprite_2d"
     tts: TTSSettings = field(default_factory=TTSSettings)
 
 
@@ -232,11 +233,16 @@ def load_storyboard(path: str | Path) -> Storyboard:
         background_color=str(raw_settings.get("background_color", "#111827")),
         samples=int(raw_settings.get("samples", 16)),
         asset_library=str(raw_settings.get("asset_library", "assets")),
+        scene_mode=str(raw_settings.get("scene_mode", "sprite_2d")),
         tts=tts,
     )
     _require(settings.width > 0 and settings.height > 0, "render dimensions must be positive")
     _require(1 <= settings.fps <= 120, "fps must be between 1 and 120")
     _require(settings.world_height > 0, "world_height must be positive")
+    _require(
+        settings.scene_mode in {"sprite_2d", "mmd_3d"},
+        "settings.scene_mode must be 'sprite_2d' or 'mmd_3d'",
+    )
 
     scenes = data.get("scenes")
     _require(isinstance(scenes, list) and scenes, "scenes must be a non-empty array")

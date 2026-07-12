@@ -320,7 +320,12 @@ def camera_pan(obj, start: int, end: int, params: dict[str, Any], **_) -> None:
     base = obj.location.copy()
     _keyframe(obj, "location", start)
     obj.location.x = base.x + float(params.get("x", 0.0))
-    obj.location.y = base.y + float(params.get("y", 0.0))
+    object_get = getattr(obj, "get", None)
+    scene_mode = object_get("motion_comic_scene_mode") if object_get is not None else None
+    if scene_mode == "mmd_3d":
+        obj.location.z = base.z + float(params.get("y", 0.0))
+    else:
+        obj.location.y = base.y + float(params.get("y", 0.0))
     _keyframe(obj, "location", end)
 
 

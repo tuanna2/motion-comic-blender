@@ -1,10 +1,22 @@
 import unittest
 from pathlib import Path
 
-from motion_comic.encoding import ffmpeg_command
+from motion_comic.encoding import ffmpeg_command, ffmpeg_pipe_command
 
 
 class EncodingTests(unittest.TestCase):
+    def test_live_pipe_command_does_not_use_frame_files(self):
+        command = ffmpeg_pipe_command(
+            "/usr/bin/ffmpeg",
+            30,
+            Path("movie.mp4"),
+            audio_path=Path("voice.wav"),
+        )
+        self.assertIn("image2pipe", command)
+        self.assertIn("pipe:0", command)
+        self.assertNotIn("frame_%04d.png", " ".join(command))
+        self.assertIn("voice.wav", command)
+
     def test_ffmpeg_command_builds_h264_mp4(self):
         command = ffmpeg_command(
             "/opt/homebrew/bin/ffmpeg",
