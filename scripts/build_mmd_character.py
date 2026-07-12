@@ -14,6 +14,12 @@ from pathlib import Path
 
 import bpy
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from motion_comic.mmd_environment import ensure_mmd_tools, mmd_tools_error  # noqa: E402
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Compile PMX with Blender MMD Tools")
@@ -23,10 +29,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def require_mmd_tools() -> None:
-    if not hasattr(bpy.ops, "mmd_tools") or not hasattr(bpy.ops.mmd_tools, "import_model"):
-        raise RuntimeError(
-            "MMD Tools is not enabled. Install MMD-Blender/blender_mmd_tools v4 and enable it."
-        )
+    environment = ensure_mmd_tools()
+    if not environment.ready:
+        raise RuntimeError(mmd_tools_error(environment))
+    if environment.enabled_module:
+        print(f"Enabled MMD Tools module: {environment.enabled_module}")
 
 
 def reset_scene() -> None:
