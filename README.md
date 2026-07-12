@@ -23,6 +23,8 @@ animations. Transparent PNG assets are supported for replacing the placeholders 
 - Cached Edge-TTS voice generation and WordBoundary-driven mouth animation
 - FFmpeg audio timeline mixing and H.264/AAC MP4 output
 - Batch queue with shared cache, resume, retries, parallel workers, and status JSON
+- Series registry with fixed character identities and distinct voice profiles
+- Local AI story-creation UI with prompt copy and result validation
 - Pure-Python validation and unit tests
 
 ## Requirements
@@ -418,6 +420,34 @@ is resumable from existing outputs and recorded at:
 output/batch/batch_status.json
 ```
 
+## Create a complete story with the fixed cast
+
+Stage 6A adds a five-character urban mystery/rebirth series. Start the local
+prompt UI:
+
+```bash
+python3 scripts/story_creator_ui.py
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8765
+```
+
+Choose 10-30 minutes, narration mode, protagonist, genre, and premise. The UI
+generates a prompt that includes the fixed cast, relationships, visual
+constraints, and action catalog. Copy it to an AI, paste the returned JSON into
+the same UI, validate it, and download `story_source.json`.
+
+The five characters have distinct palettes and Edge-TTS profiles built from
+the two valid Vietnamese voices plus rate/volume/pitch variation. Their asset
+status is deliberately `planned`; this registry defines the identities before
+the matching PNG character packs are created.
+
+See `docs/SERIES.md`, `schemas/series.schema.json`, and
+`schemas/story_source.schema.json`.
+
 ```json
 {
   "version": "1.0",
@@ -469,6 +499,8 @@ motion_comic/              Blender/Python engine
   effects.py               Procedural symbols, flashes, and auras
   rig.py                   Rig hierarchy validation and ordering
   batch.py                 Batch validation and command planning
+  series.py                Fixed cast and story-source validation
+  story_prompt.py          AI story prompt generation
   voice.py                 TTS jobs, cache keys, word cues, and audio mixing
   lipsync.py               Lip-sync sidecar validation and frame conversion
   registry.py              Versioned asset manifest discovery
@@ -480,6 +512,9 @@ scripts/render_storyboard.py
 scripts/generate_voice.py
 scripts/render_batch.py
 scripts/list_actions.py
+scripts/story_creator_ui.py
+scripts/generate_story_prompt.py
+scripts/check_story_source.py
 scripts/check_project.py
 tests/                     Blender-independent unit tests
 ```

@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Motion Comic Story Creator</title>
+  <style>
+    :root { color-scheme: dark; --bg:#090d18; --panel:#111827; --line:#29364d; --text:#e5e7eb; --muted:#94a3b8; --accent:#38bdf8; --good:#34d399; --bad:#fb7185; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:linear-gradient(145deg,#07111f,#111827 55%,#1e1b4b); color:var(--text); font:15px/1.5 system-ui,-apple-system,sans-serif; }
+    header { padding:28px max(24px,calc((100vw - 1280px)/2)); border-bottom:1px solid var(--line); background:#090d18d9; position:sticky; top:0; backdrop-filter:blur(12px); z-index:5; }
+    h1 { margin:0; font-size:24px; } header p { margin:5px 0 0; color:var(--muted); }
+    main { max-width:1280px; margin:auto; padding:24px; display:grid; gap:20px; }
+    section { background:#111827e8; border:1px solid var(--line); border-radius:16px; padding:20px; box-shadow:0 18px 40px #0004; }
+    h2 { margin:0 0 14px; font-size:18px; }
+    .characters { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+    .card { border:1px solid var(--line); border-left:5px solid var(--character-color); border-radius:12px; padding:14px; background:#0b1220; }
+    .card h3 { margin:0 0 2px; } .card .role { color:var(--accent); font-size:13px; }
+    .card p { color:var(--muted); margin:8px 0; min-height:46px; }
+    .swatches { display:flex; gap:6px; margin:9px 0; } .swatch { width:22px; height:22px; border-radius:50%; border:1px solid #fff4; }
+    .voice { font:12px ui-monospace,SFMono-Regular,monospace; color:#cbd5e1; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .wide { grid-column:1/-1; }
+    label { display:block; color:#cbd5e1; font-weight:650; margin-bottom:6px; }
+    input,select,textarea { width:100%; border:1px solid var(--line); background:#070d18; color:var(--text); border-radius:10px; padding:11px 12px; font:inherit; }
+    textarea { resize:vertical; min-height:110px; } #prompt { min-height:360px; font:12px/1.45 ui-monospace,SFMono-Regular,monospace; } #aiResult { min-height:300px; font:12px/1.45 ui-monospace,SFMono-Regular,monospace; }
+    .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+    button { border:0; border-radius:10px; padding:11px 15px; font-weight:750; cursor:pointer; background:var(--accent); color:#062033; }
+    button.secondary { background:#243147; color:var(--text); } button.good { background:var(--good); color:#05281e; } button:disabled { opacity:.45; cursor:not-allowed; }
+    .status { margin-top:12px; border-radius:10px; padding:11px 13px; display:none; white-space:pre-wrap; }
+    .status.show { display:block; } .status.good { background:#064e3b66; color:#a7f3d0; } .status.bad { background:#88133766; color:#fecdd3; } .status.info { background:#0c4a6e66; color:#bae6fd; }
+    .hint { color:var(--muted); font-size:13px; margin-top:7px; }
+    @media (max-width:760px) { .grid { grid-template-columns:1fr; } .wide { grid-column:auto; } header { position:static; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Motion Comic Story Creator</h1>
+    <p id="seriesTitle">Đang tải series…</p>
+  </header>
+  <main>
+    <section>
+      <h2>1. Năm nhân vật cố định</h2>
+      <div id="characters" class="characters"></div>
+    </section>
+
+    <section>
+      <h2>2. Tạo prompt viết truyện</h2>
+      <div class="grid">
+        <div>
+          <label for="minutes">Thời lượng TTS</label>
+          <select id="minutes">
+            <option value="10">10 phút</option><option value="15" selected>15 phút</option>
+            <option value="20">20 phút</option><option value="25">25 phút</option><option value="30">30 phút</option>
+          </select>
+        </div>
+        <div>
+          <label for="narrationMode">Ngôi kể</label>
+          <select id="narrationMode">
+            <option value="first_person">Ngôi thứ nhất</option>
+            <option value="third_person">Ngôi thứ ba / người dẫn chuyện</option>
+          </select>
+        </div>
+        <div>
+          <label for="protagonist">Nhân vật chính</label>
+          <select id="protagonist"></select>
+        </div>
+        <div>
+          <label for="genre">Thể loại</label>
+          <input id="genre" value="đô thị, bí ẩn, trùng sinh, kinh dị, tình cảm">
+        </div>
+        <div class="wide">
+          <label for="premise">Ý tưởng hoặc yêu cầu tập này</label>
+          <textarea id="premise" placeholder="Ví dụ: Minh Khang tỉnh lại trước ngày vụ cháy xảy ra và phát hiện An Nhiên cũng nhớ được kiếp trước…"></textarea>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="generatePrompt">Tạo prompt</button>
+        <button id="copyPrompt" class="secondary" disabled>Copy prompt</button>
+      </div>
+      <div id="promptStatus" class="status"></div>
+      <label for="prompt" style="margin-top:14px">Prompt để gửi vào ChatGPT/AI khác</label>
+      <textarea id="prompt" readonly placeholder="Bấm “Tạo prompt”…"></textarea>
+    </section>
+
+    <section>
+      <h2>3. Paste kết quả AI</h2>
+      <label for="aiResult">Story source JSON</label>
+      <textarea id="aiResult" placeholder='Paste JSON AI trả về, bắt đầu bằng { và kết thúc bằng }'></textarea>
+      <div class="actions">
+        <button id="validateResult" class="good">Kiểm tra kết quả</button>
+        <button id="downloadResult" class="secondary" disabled>Tải story_source.json</button>
+      </div>
+      <div id="validationStatus" class="status"></div>
+      <p class="hint">UI kiểm tra series ID, narrator, danh sách nhân vật, thời lượng và độ dài nội dung. JSON hợp lệ mới được tải xuống.</p>
+    </section>
+  </main>
+  <script>
+    let series = null;
+    let validStory = null;
+    const $ = id => document.getElementById(id);
+    function showStatus(element, message, type) {
+      element.textContent = message; element.className = `status show ${type}`;
+    }
+    async function loadSeries() {
+      const response = await fetch('/api/series'); series = await response.json();
+      $('seriesTitle').textContent = `${series.title} · ${series.characters.length} nhân vật chính · ${series.language}`;
+      $('characters').innerHTML = series.characters.map(character => {
+        const colors = character.visual.palette.map(color => `<span class="swatch" style="background:${color}"></span>`).join('');
+        const voice = character.voice_profiles.dialogue;
+        return `<article class="card" style="--character-color:${character.visual.palette[0]}">
+          <h3>${character.name}</h3><div class="role">${character.role}</div>
+          <div class="swatches">${colors}</div><p>${character.story_function}</p>
+          <div class="voice">${voice.voice}<br>rate ${voice.rate} · pitch ${voice.pitch}</div>
+        </article>`;
+      }).join('');
+      $('protagonist').innerHTML = series.characters.map(character => `<option value="${character.id}">${character.name}</option>`).join('');
+      $('protagonist').value = series.story_rules.default_protagonist_id;
+    }
+    $('generatePrompt').addEventListener('click', async () => {
+      showStatus($('promptStatus'), 'Đang tạo prompt…', 'info');
+      const response = await fetch('/api/prompt', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+        minutes:Number($('minutes').value), narration_mode:$('narrationMode').value,
+        protagonist_id:$('protagonist').value, genre:$('genre').value, premise:$('premise').value
+      })});
+      const data = await response.json();
+      if (!response.ok) return showStatus($('promptStatus'), data.error || 'Không tạo được prompt', 'bad');
+      $('prompt').value = data.prompt; $('copyPrompt').disabled = false;
+      showStatus($('promptStatus'), `Đã tạo prompt ${data.prompt.length.toLocaleString()} ký tự.`, 'good');
+    });
+    $('copyPrompt').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText($('prompt').value); }
+      catch { $('prompt').select(); document.execCommand('copy'); }
+      showStatus($('promptStatus'), 'Đã copy prompt.', 'good');
+    });
+    $('validateResult').addEventListener('click', async () => {
+      validStory = null; $('downloadResult').disabled = true;
+      const response = await fetch('/api/validate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({story_source:$('aiResult').value}) });
+      const data = await response.json();
+      if (!response.ok) return showStatus($('validationStatus'), `JSON không đọc được: ${data.error}`, 'bad');
+      const details = [`Số từ: ${data.word_count}`, `Ước tính TTS: ${data.estimated_minutes} phút`];
+      if (data.warnings.length) details.push(`Cảnh báo:\n- ${data.warnings.join('\n- ')}`);
+      if (!data.valid) return showStatus($('validationStatus'), `Không hợp lệ:\n- ${data.errors.join('\n- ')}\n\n${details.join('\n')}`, 'bad');
+      validStory = data.story_source; $('downloadResult').disabled = false;
+      showStatus($('validationStatus'), `Hợp lệ.\n${details.join('\n')}`, data.warnings.length ? 'info' : 'good');
+    });
+    $('downloadResult').addEventListener('click', () => {
+      if (!validStory) return;
+      const blob = new Blob([JSON.stringify(validStory, null, 2) + '\n'], {type:'application/json'});
+      const link = document.createElement('a'); link.href = URL.createObjectURL(blob);
+      link.download = 'story_source.json'; link.click(); URL.revokeObjectURL(link.href);
+    });
+    loadSeries().catch(error => showStatus($('promptStatus'), `Không tải được series: ${error}`, 'bad'));
+  </script>
+</body>
+</html>

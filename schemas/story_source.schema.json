@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motion-comic.local/schemas/story_source.schema.json",
+  "title": "Motion Comic Story Source",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "series_id",
+    "title",
+    "narration_mode",
+    "narrator_character_id",
+    "estimated_minutes",
+    "characters_used",
+    "full_story_text"
+  ],
+  "properties": {
+    "version": {"const": "1.0"},
+    "series_id": {"type": "string", "minLength": 1},
+    "title": {"type": "string", "minLength": 1},
+    "narration_mode": {"enum": ["first_person", "third_person"]},
+    "narrator_character_id": {"type": "string", "minLength": 1},
+    "estimated_minutes": {"type": "number", "minimum": 10, "maximum": 30},
+    "characters_used": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "logline": {"type": "string"},
+    "full_story_text": {"type": "string", "minLength": 500}
+  }
+}
