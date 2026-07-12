@@ -187,6 +187,14 @@ class RenderJobManager:
             blender = discover_blender(blender_bin)
 
             with job.log_path.open("w", encoding="utf-8") as log:
+                if placeholder_missing_assets:
+                    self._update(job, stage="assets", progress_message="Đang tạo asset placeholder")
+                    self._run_command(
+                        job,
+                        [sys.executable, str(self.root / "scripts" / "generate_demo_assets.py")],
+                        log,
+                    )
+
                 if with_tts:
                     self._update(job, stage="tts", progress_message="Đang tạo Edge-TTS")
                     self._run_command(
