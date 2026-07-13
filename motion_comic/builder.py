@@ -73,6 +73,10 @@ def setup_render(storyboard: Storyboard, output_path: Path):
     camera = bpy.data.objects.new("MotionComicCamera", camera_data)
     bpy.context.scene.collection.objects.link(camera)
     camera.data.type = "ORTHO"
+    # Keep ortho_scale tied to storyboard world height. Blender's AUTO sensor
+    # fit treats it as horizontal scale for landscape output, which crops low
+    # MMD characters out of the vertical frame.
+    camera.data.sensor_fit = "VERTICAL"
     _set_camera_baseline(camera, settings.scene_mode, settings.world_height, 1)
     scene.camera = camera
     return scene, camera, frames_dir
@@ -414,7 +418,7 @@ def render_storyboard(
     resolved_output.parent.mkdir(parents=True, exist_ok=True)
     resolved_audio = Path(audio_path).expanduser().resolve() if audio_path is not None else None
     lip_sync = load_lip_sync(lip_sync_path) if lip_sync_path is not None else None
-    _scene, frames_dir = build_storyboard(storyboard, resolved_output, lip_sync=lip_sync)
+    scene, frames_dir = build_storyboard(storyboard, resolved_output, lip_sync=lip_sync)
     if save_blend:
         blend_path = Path(save_blend).expanduser().resolve()
         blend_path.parent.mkdir(parents=True, exist_ok=True)

@@ -116,7 +116,14 @@ def create_mmd_character(
                 rigid_body.kinematic = True
 
     morphs = _collect_shape_keys(objects, dict(data.get("morphs", {})))
-    renderables = [obj for obj in objects if obj.type in {"MESH", "CURVE", "SURFACE"}]
+    # MMD Tools stores collision/physics helpers as hidden mesh objects in the
+    # same collection. They must stay hidden; treating them as scene
+    # renderables makes _show_during() reveal them as large black geometry.
+    renderables = [
+        obj
+        for obj in objects
+        if obj.type in {"MESH", "CURVE", "SURFACE"} and not obj.hide_render
+    ]
     return AssetBundle(
         root=root,
         renderables=renderables,

@@ -18,7 +18,7 @@ def camera_baseline(scene_mode: str, world_height: float) -> CameraBaseline:
         return CameraBaseline((0.0, 0.0, 20.0), (0.0, 0.0, 0.0), world_height)
     if scene_mode == "mmd_3d":
         return CameraBaseline(
-            (0.0, -18.0, 5.0),
+            (0.0, -18.0, world_height / 2),
             (math.radians(90), 0.0, 0.0),
             world_height,
         )

@@ -16,7 +16,7 @@
       "duration": 8,
       "background_color": "#172554",
       "elements": [
-        {"id": "hero", "kind": "character", "asset_ref": "char_mmd_demo@1", "x": -2, "y": 0, "z": 0, "scale": 1}
+        {"id": "hero", "kind": "character", "asset_ref": "char_mmd_demo@1", "x": -2, "y": 0, "z": 0, "scale": 3}
       ],
       "motions": [
         {"target": "hero", "action": "walk", "start": 0, "end": 3, "params": {"distance": 2}},

@@ -12,7 +12,7 @@ class CameraTests(unittest.TestCase):
 
     def test_mmd_scene_uses_front_facing_coordinate_system(self):
         baseline = camera_baseline("mmd_3d", 9)
-        self.assertEqual(baseline.location, (0.0, -18.0, 5.0))
+        self.assertEqual(baseline.location, (0.0, -18.0, 4.5))
         self.assertAlmostEqual(baseline.rotation[0], math.pi / 2)
 
     def test_unknown_mode_is_rejected(self):

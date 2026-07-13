@@ -1,6 +1,6 @@
 [project]
 name = "motion-comic-blender"
-version = "0.4.0"
+version = "0.3.0"
 description = "JSON-driven deterministic 2D/2.5D motion comic renderer for Blender"
 requires-python = ">=3.11"
 
@@ -8,7 +8,17 @@ requires-python = ">=3.11"
 tts = ["edge-tts>=7.2.8,<8"]
 
 [tool.setuptools]
-packages = ["motion_comic", "motion_comic.backends"]
+packages = ["motion_comic"]
 
 [tool.ruff]
 line-length = 100
+
+[tool.setuptools.packages.find]
+
+where = ["."]
+
+include = ["motion_comic*"]
+
+exclude = ["assets*", "output*"]
+
+namespaces = false
