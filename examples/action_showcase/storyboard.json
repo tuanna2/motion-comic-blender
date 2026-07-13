@@ -1,0 +1,92 @@
+{
+  "version": "1.0",
+  "title": "Semantic Action Showcase",
+  "settings": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30,
+    "world_height": 9,
+    "background_color": "#0f172a",
+    "samples": 16,
+    "asset_library": "../../assets"
+  },
+  "scenes": [
+    {
+      "id": "movement_and_reaction",
+      "template_ref": "scene_river_bank@1",
+      "duration": 6,
+      "background_color": "#7dd3fc",
+      "elements": [
+        {
+          "id": "hero",
+          "kind": "character",
+          "asset_ref": "char_angler@1",
+          "expression": "normal",
+          "slot": "left"
+        }
+      ],
+      "motions": [
+        {"target": "hero", "action": "enter_scene", "start": 0, "end": 0.8},
+        {"target": "hero", "action": "walk_fast", "start": 0.8, "end": 2.0, "params": {"distance": 1.8}},
+        {"target": "hero", "action": "stop_suddenly", "start": 2.0, "end": 2.5},
+        {"target": "hero", "action": "surprised", "start": 2.4, "end": 3.4},
+        {"target": "hero", "action": "exclamation_mark", "start": 2.4, "end": 3.4},
+        {"target": "hero", "action": "wave", "start": 3.5, "end": 5.5},
+        {"target": "camera", "action": "camera_push_in", "start": 2.1, "end": 3.5}
+      ],
+      "subtitles": [
+        {"start": 2.4, "end": 3.4, "text": "Ơ, ai ở đó vậy?"}
+      ]
+    },
+    {
+      "id": "social_conflict",
+      "template_ref": "scene_river_bank@1",
+      "duration": 7,
+      "background_color": "#a7f3d0",
+      "elements": [
+        {"id": "hero", "kind": "character", "asset_ref": "char_angler@1", "slot": "left"},
+        {"id": "rival", "kind": "character", "asset_ref": "char_angler@1", "slot": "right", "expression": "angry"}
+      ],
+      "motions": [
+        {"target": "hero", "action": "handshake", "start": 0.3, "end": 1.5, "params": {"with": "rival"}},
+        {"target": "rival", "action": "ignore", "start": 1.6, "end": 2.6},
+        {"target": "hero", "action": "confused", "start": 2.2, "end": 3.2},
+        {"target": "hero", "action": "question_mark", "start": 2.2, "end": 3.2},
+        {"target": "rival", "action": "talk_angry", "start": 3.0, "end": 4.6},
+        {"target": "rival", "action": "point_angrily", "start": 3.2, "end": 4.6},
+        {"target": "hero", "action": "step_back_scared", "start": 4.5, "end": 5.5},
+        {"target": "hero", "action": "cover_face", "start": 5.4, "end": 6.7},
+        {"target": "camera", "action": "camera_focus_shift", "start": 2.7, "end": 4.2, "params": {"focus": "rival"}}
+      ],
+      "subtitles": [
+        {"start": 3.0, "end": 4.6, "text": "Đừng động vào chỗ câu cá của tôi!"}
+      ]
+    },
+    {
+      "id": "comic_fight",
+      "template_ref": "scene_river_bank@1",
+      "duration": 7,
+      "background_color": "#fecaca",
+      "elements": [
+        {"id": "hero", "kind": "character", "asset_ref": "char_angler@1", "slot": "left", "expression": "angry"},
+        {"id": "rival", "kind": "character", "asset_ref": "char_angler@1", "slot": "right", "expression": "angry"},
+        {"id": "impact_label", "kind": "text", "x": 0, "y": 2.8, "z": 9, "size": 1.2, "text": "BỐP!", "color": "#fef08a", "visible_start": 1.8, "visible_end": 2.7}
+      ],
+      "motions": [
+        {"target": "hero", "action": "charge", "start": 0.3, "end": 1.2},
+        {"target": "hero", "action": "punch", "start": 1.2, "end": 2.5, "params": {"with": "rival", "recoil": 1.0}},
+        {"target": "camera", "action": "impact_flash", "start": 1.8, "end": 2.2},
+        {"target": "camera", "action": "camera_shake", "start": 1.8, "end": 2.5},
+        {"target": "impact_label", "action": "reaction_pop", "start": 1.8, "end": 2.6},
+        {"target": "rival", "action": "stumble", "start": 2.4, "end": 3.4},
+        {"target": "rival", "action": "fall_down", "start": 3.3, "end": 4.3},
+        {"target": "rival", "action": "cry", "start": 4.4, "end": 6.5},
+        {"target": "rival", "action": "tear_stream", "start": 4.4, "end": 6.5},
+        {"target": "hero", "action": "proud", "start": 4.5, "end": 6.5}
+      ],
+      "subtitles": [
+        {"start": 4.5, "end": 6.5, "text": "Lần sau đừng bắt nạt người khác!"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "version": "1.0",
+  "title": "Fishing Episode 2 - Same Character",
+  "settings": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30,
+    "world_height": 9,
+    "background_color": "#0f172a",
+    "samples": 16,
+    "asset_library": "../../assets",
+    "tts": {
+      "voice": "vi-VN-HoaiMyNeural",
+      "rate": "+4%",
+      "volume": "+0%",
+      "pitch": "+0Hz"
+    }
+  },
+  "scenes": [
+    {
+      "id": "storm_lake",
+      "template_ref": "scene_river_bank@1",
+      "duration": 5.0,
+      "background_color": "#475569",
+      "elements": [
+        {
+          "id": "ground",
+          "kind": "rectangle",
+          "x": 0,
+          "y": -3.4,
+          "z": 0,
+          "width": 16,
+          "height": 2.2,
+          "color": "#365314"
+        },
+        {
+          "id": "lake",
+          "kind": "rectangle",
+          "x": 3.5,
+          "y": -2.25,
+          "z": 0.5,
+          "width": 9,
+          "height": 1.7,
+          "color": "#075985"
+        },
+        {
+          "id": "angler",
+          "kind": "character",
+          "asset_ref": "char_angler@1",
+          "appearance": "default",
+          "expression": "scared",
+          "slot": "auto"
+        },
+        {
+          "id": "angler_hat",
+          "kind": "prop",
+          "asset_ref": "prop_straw_hat@1",
+          "attach": {
+            "target": "angler",
+            "anchor": "head",
+            "offset": [0, 0.5],
+            "z": 0.3
+          }
+        }
+      ],
+      "motions": [
+        {
+          "target": "angler",
+          "preset": "walk",
+          "start": 0,
+          "end": 1.0,
+          "params": {"from_x": -4, "cycles": 3, "stride_degrees": 24}
+        },
+        {
+          "target": "angler",
+          "preset": "look",
+          "start": 0.9,
+          "end": 1.9,
+          "params": {"degrees": -18, "return": true}
+        },
+        {
+          "target": "angler",
+          "preset": "nod",
+          "start": 2.0,
+          "end": 3.0,
+          "params": {"cycles": 2, "degrees": 8}
+        },
+        {
+          "target": "angler",
+          "preset": "wave",
+          "start": 3.1,
+          "end": 4.8,
+          "params": {"cycles": 3, "amplitude_degrees": 24}
+        },
+        {
+          "target": "angler",
+          "preset": "shake",
+          "start": 3.1,
+          "end": 4.8,
+          "params": {"amplitude": 0.08}
+        },
+        {
+          "target": "camera",
+          "preset": "camera_pan",
+          "start": 0,
+          "end": 5.0,
+          "params": {"x": 0.7, "y": 0}
+        }
+      ],
+      "subtitles": [
+        {
+          "start": 1.0,
+          "end": 3.2,
+          "text": "Sao mặt hồ hôm nay đáng sợ thế?",
+          "speaker": "angler"
+        }
+      ]
+    }
+  ]
+}

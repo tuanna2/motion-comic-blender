@@ -1,0 +1,280 @@
+{
+  "version": "1.0",
+  "series_id": "urban_mystery",
+  "title": "Ký Ức Sau Nửa Đêm",
+  "language": "vi-VN",
+  "default_genres": ["đô thị", "bí ẩn", "trùng sinh", "kinh dị", "tình cảm", "đấu trí"],
+  "story_rules": {
+    "default_narration_mode": "first_person",
+    "default_protagonist_id": "char_minh_khang",
+    "allow_new_main_characters": false,
+    "crowd_character_id": "crowd_default",
+    "dialogue_attribution_required": true,
+    "visualizable_storytelling": true
+  },
+  "narrator": {
+    "id": "narrator",
+    "visible": false,
+    "voice": {
+      "engine": "edge_tts",
+      "voice": "vi-VN-NamMinhNeural",
+      "rate": "-6%",
+      "volume": "+0%",
+      "pitch": "-8Hz"
+    }
+  },
+  "characters": [
+    {
+      "id": "char_minh_khang",
+      "name": "Minh Khang",
+      "gender": "male",
+      "age": 27,
+      "role": "protagonist",
+      "story_function": "Nhân vật trung tâm và người kể mặc định; tỉnh táo, phân tích tốt nhưng mang ký ức không hoàn chỉnh về một biến cố trong quá khứ.",
+      "personality": ["điềm tĩnh", "thận trọng", "kiên định", "hay tự trách", "bảo vệ người khác"],
+      "speech_style": "Câu ngắn, rõ ràng, ít khoa trương; khi kể chuyện thường quan sát chi tiết và tự chất vấn bản thân.",
+      "visual": {
+        "asset_id": "char_minh_khang",
+        "asset_status": "planned",
+        "palette": ["#0f172a", "#1d4ed8", "#67e8f9"],
+        "skin_tone": "light_medium_warm",
+        "face": "Khuôn mặt hơi góc cạnh, lông mày thẳng, ánh mắt tập trung.",
+        "hair": "Tóc đen ngắn, rẽ lệch, phần mái hơi rủ xuống trán.",
+        "outfit": "Áo khoác xanh đậm, áo thun xám, quần tối màu, đồng hồ kim loại.",
+        "accessories": ["đồng hồ kim loại"],
+        "height_profile": "tall",
+        "silhouette": "vai thẳng, dáng gọn, chuyển động có kiểm soát"
+      },
+      "voice_profiles": {
+        "dialogue": {
+          "engine": "edge_tts",
+          "voice": "vi-VN-NamMinhNeural",
+          "rate": "+1%",
+          "volume": "+0%",
+          "pitch": "-2Hz"
+        },
+        "narration": {
+          "engine": "edge_tts",
+          "voice": "vi-VN-NamMinhNeural",
+          "rate": "-4%",
+          "volume": "+0%",
+          "pitch": "-4Hz"
+        }
+      },
+      "preferred_actions": ["think", "inspect", "look_around", "protect_person", "confront", "run"]
+    },
+    {
+      "id": "char_an_nhien",
+      "name": "An Nhiên",
+      "gender": "female",
+      "age": 25,
+      "role": "ally_love_interest",
+      "story_function": "Đồng minh thông minh và tuyến tình cảm; thường nhận ra cảm xúc hoặc dấu hiệu mà Minh Khang bỏ qua.",
+      "personality": ["ấm áp", "quan sát tốt", "độc lập", "dũng cảm", "đôi lúc bướng bỉnh"],
+      "speech_style": "Nói tự nhiên, trực tiếp nhưng không thô; hay đặt câu hỏi để buộc người khác nói thật.",
+      "visual": {
+        "asset_id": "char_an_nhien",
+        "asset_status": "planned",
+        "palette": ["#fff7ed", "#fb7185", "#7c2d12"],
+        "skin_tone": "light_warm",
+        "face": "Khuôn mặt trái xoan, mắt sáng, biểu cảm thay đổi rõ.",
+        "hair": "Tóc nâu hạt dẻ ngang vai, uốn nhẹ phần đuôi, mái lệch.",
+        "outfit": "Áo khoác hồng đất, áo kem, váy hoặc quần nâu sẫm, giày cổ thấp.",
+        "accessories": ["kẹp tóc hình lá", "túi đeo chéo nhỏ"],
+        "height_profile": "medium",
+        "silhouette": "nhẹ, linh hoạt, tay thường thể hiện cảm xúc"
+      },
+      "voice_profiles": {
+        "dialogue": {
+          "engine": "edge_tts",
+          "voice": "vi-VN-HoaiMyNeural",
+          "rate": "+5%",
+          "volume": "+0%",
+          "pitch": "+3Hz"
+        },
+        "narration": {
+          "engine": "edge_tts",
+          "voice": "vi-VN-HoaiMyNeural",
+          "rate": "+1%",
+          "volume": "+0%",
+          "pitch": "+1Hz"
+        }
+      },
+      "preferred_actions": ["ask", "comfort", "search", "realize", "hold_hand", "stand_in_front"]
+    },
+    {
+      "id": "char_tran_vu",
+      "name": "Trần Vũ",
+      "gender": "male",
+      "age": 31,
+      "role": "rival_ambiguous_antagonist",
+      "story_function": "Đối thủ có mục tiêu riêng; gây áp lực cho nhân vật chính nhưng không phải lúc nào cũng là người xấu.",
+      "personality": ["lạnh lùng", "tham vọng", "tự chủ", "đa nghi", "tôn trọng người có năng lực"],
+      "speech_style": "Nói chậm, ít từ, thường dùng câu khẳng định; hiếm khi giải thích toàn bộ ý định.",
+      "visual": {
+        "asset_id": "char_tran_vu",
+        "asset_status": "planned",
+        "palette": ["#111827", "#7f1d1d", "#d1d5db"],
+        "skin_tone": "medium_neutral",
+        "face": "Mặt dài, gò má rõ, mắt hẹp và ít chớp.",
+        "hair": "Tóc đen vuốt ngược gọn, hai bên cắt ngắn.",
+        "outfit": "Áo khoác dài đỏ rượu vang, áo cổ lọ đen, quần đen, giày da.",
+        "accessories": ["nhẫn bạc", "găng tay đen"],
+        "height_profile": "tall",
+        "silhouette": "cao, thẳng, gần như không có động tác thừa"
+      },
+      "voice_profiles": {
+        "dialogue": {
+          "engine": "edge_tts",
+          "voice": "vi-VN-NamMinhNeural",
+          "rate": "-9%",
+          "volume": "+4%",
+          "pitch": "-14Hz"
+        },
+        "narration": {
+          "engine": "edge_tts",
+          "voice": "vi-VN-NamMinhNeural",
+          "rate": "-12%",
+          "volume": "+2%",
+          "pitch": "-16Hz"
+        }
+      },
+      "preferred_actions": ["cold_stare", "threaten", "cross_arms", "confront", "block_path", "walk_slow"]
+    },
+    {
+      "id": "char_ba_hanh",
+      "name": "Bà Hạnh",
+      "gender": "female",
+      "age": 62,
+      "role": "mentor_secret_keeper",
+      "story_function": "Người dẫn đường nắm giữ bí mật về quá khứ, nghi lễ hoặc quy luật siêu nhiên; giúp đỡ nhưng không tiết lộ mọi thứ ngay lập tức.",
+      "personality": ["điềm đạm", "bí ẩn", "nhân hậu", "nghiêm khắc", "kiên nhẫn"],
+      "speech_style": "Nói chậm, dùng hình ảnh ẩn dụ vừa phải; khi cảnh báo sẽ rất ngắn và dứt khoát.",
+      "visual": {
+        "asset_id": "char_ba_hanh",
+        "asset_status": "planned",
+        "palette": ["#365314", "#a16207", "#fef3c7"],
+        "skin_tone": "medium_warm_aged",
+        "face": "Khuôn mặt tròn có nếp nhăn nhẹ, ánh mắt bình tĩnh và sắc.",
+        "hair": "Tóc bạc búi thấp, vài sợi tóc mai tự nhiên.",
+        "outfit": "Áo dài hoặc áo khoác xanh ô-liu, khăn vàng nâu, quần tối màu.",
+        "accessories": ["vòng gỗ", "túi vải cũ"],
+        "height_profile": "short",
+        "silhouette": "nhỏ, vững, cử động chậm nhưng chính xác"
+      },
+      "voice_profiles": {
+        "dialogue": {
+          "engine": "edge_tts",
+          "voice": "vi-VN-HoaiMyNeural",
+          "rate": "-14%",
+          "volume": "+1%",
+          "pitch": "-12Hz"
+        },
+        "narration": {
+          "engine": "edge_tts",
+          "voice": "vi-VN-HoaiMyNeural",
+          "rate": "-16%",
+          "volume": "+1%",
+          "pitch": "-14Hz"
+        }
+      },
+      "preferred_actions": ["explain", "command", "deep_thought", "inspect", "comfort", "raise_hand"]
+    },
+    {
+      "id": "char_le_huyen",
+      "name": "Lệ Huyền",
+      "gender": "female",
+      "age": 29,
+      "role": "mysterious_wildcard",
+      "story_function": "Nhân vật khó đoán có liên hệ với biến cố chính; có thể là đối thủ, người cứu giúp hoặc tác nhân tạo cú ngoặt.",
+      "personality": ["quyến rũ", "điềm tĩnh", "sắc sảo", "khó đoán", "không dễ tin ai"],
+      "speech_style": "Giọng mềm và chậm, thường nói nửa thật nửa đùa; khi mất bình tĩnh sẽ chuyển sang câu rất ngắn.",
+      "visual": {
+        "asset_id": "char_le_huyen",
+        "asset_status": "planned",
+        "palette": ["#1e1b4b", "#7e22ce", "#e9d5ff"],
+        "skin_tone": "light_cool",
+        "face": "Mặt chữ V nhẹ, mắt dài, nốt ruồi nhỏ dưới mắt trái.",
+        "hair": "Tóc đen dài thẳng, ánh tím, thường phủ qua một bên vai.",
+        "outfit": "Váy hoặc áo khoác đen tím, chi tiết bạc, giày cao cổ.",
+        "accessories": ["khuyên tai bạc dài", "mặt dây chuyền tím"],
+        "height_profile": "medium_tall",
+        "silhouette": "thanh mảnh, chuyển động chậm và có chủ ý"
+      },
+      "voice_profiles": {
+        "dialogue": {
+          "engine": "edge_tts",
+          "voice": "vi-VN-HoaiMyNeural",
+          "rate": "-5%",
+          "volume": "-1%",
+          "pitch": "-6Hz"
+        },
+        "narration": {
+          "engine": "edge_tts",
+          "voice": "vi-VN-HoaiMyNeural",
+          "rate": "-8%",
+          "volume": "-1%",
+          "pitch": "-8Hz"
+        }
+      },
+      "preferred_actions": ["smile", "cold_stare", "whisper", "turn_away_angry", "observe_secretly", "walk_slow"]
+    }
+  ],
+  "relationships": [
+    {
+      "from": "char_minh_khang",
+      "to": "char_an_nhien",
+      "type": "trust_and_slow_romance",
+      "initial_state": "Tin nhau nhưng cả hai đều che giấu một phần quá khứ."
+    },
+    {
+      "from": "char_minh_khang",
+      "to": "char_tran_vu",
+      "type": "rivalry",
+      "initial_state": "Đối đầu vì cùng truy tìm một bí mật, đôi lúc buộc phải hợp tác."
+    },
+    {
+      "from": "char_ba_hanh",
+      "to": "char_minh_khang",
+      "type": "mentor_withheld_truth",
+      "initial_state": "Bà Hạnh biết nguyên nhân ký ức của Minh Khang bị khuyết nhưng chưa nói hết."
+    },
+    {
+      "from": "char_le_huyen",
+      "to": "char_minh_khang",
+      "type": "unknown_past_connection",
+      "initial_state": "Lệ Huyền nhận ra Minh Khang trước khi anh nhận ra cô."
+    },
+    {
+      "from": "char_le_huyen",
+      "to": "char_tran_vu",
+      "type": "unstable_alliance",
+      "initial_state": "Hai người trao đổi thông tin nhưng luôn đề phòng nhau."
+    }
+  ],
+  "crowd": {
+    "id": "crowd_default",
+    "name": "Nhân vật quần chúng",
+    "asset_id": "char_crowd_default",
+    "asset_status": "planned",
+    "reuse_same_appearance": true,
+    "allow_flip": true,
+    "allow_scale_variation": true,
+    "speaking_voice_pool": [
+      {
+        "engine": "edge_tts",
+        "voice": "vi-VN-NamMinhNeural",
+        "rate": "+6%",
+        "volume": "-2%",
+        "pitch": "+8Hz"
+      },
+      {
+        "engine": "edge_tts",
+        "voice": "vi-VN-HoaiMyNeural",
+        "rate": "+7%",
+        "volume": "-2%",
+        "pitch": "+7Hz"
+      }
+    ]
+  }
+}

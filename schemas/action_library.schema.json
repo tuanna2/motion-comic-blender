@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motion-comic.local/schemas/action_library.schema.json",
+  "title": "MMD Blender Action library manifest",
+  "type": "object",
+  "required": ["schema_version", "id", "version", "type", "blend", "actions"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "id": {"type": "string", "minLength": 1},
+    "version": {"type": "integer", "minimum": 1},
+    "type": {"const": "action_library"},
+    "blend": {"type": "string", "minLength": 1},
+    "reference_model": {"type": "string", "minLength": 1},
+    "default_fallback": {"type": "string", "minLength": 1},
+    "fallbacks": {"type": "object", "additionalProperties": {"type": "string"}},
+    "actions": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "action": {"type": "string", "minLength": 1},
+          "fallback": {"type": "string", "minLength": 1},
+          "source": {"type": "string", "minLength": 1},
+          "track": {"enum": ["base", "upper", "face", "additive"]},
+          "loop": {"type": "boolean"},
+          "root_motion": {"type": "boolean"},
+          "blend_in": {"type": "integer", "minimum": 0},
+          "blend_out": {"type": "integer", "minimum": 0},
+          "blend_type": {"enum": ["REPLACE", "ADD", "SUBTRACT", "MULTIPLY"]}
+        },
+        "anyOf": [{"required": ["action"]}, {"required": ["fallback"]}],
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

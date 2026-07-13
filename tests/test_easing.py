@@ -1,6 +1,13 @@
 import unittest
 
-from motion_comic.easing import clamp, deterministic_shake, ease_in_out, lerp, parabolic_arc
+from motion_comic.easing import (
+    choose_render_engine,
+    clamp,
+    deterministic_shake,
+    ease_in_out,
+    lerp,
+    parabolic_arc,
+)
 
 
 class EasingTests(unittest.TestCase):
@@ -23,7 +30,20 @@ class EasingTests(unittest.TestCase):
     def test_shake_is_repeatable(self):
         self.assertEqual(deterministic_shake(5, 0.2), deterministic_shake(5, 0.2))
 
+    def test_engine_selection_supports_blender_4_and_5(self):
+        self.assertEqual(
+            choose_render_engine({"BLENDER_EEVEE_NEXT", "CYCLES"}),
+            "BLENDER_EEVEE_NEXT",
+        )
+        self.assertEqual(
+            choose_render_engine({"BLENDER_EEVEE", "BLENDER_WORKBENCH", "CYCLES"}),
+            "BLENDER_EEVEE",
+        )
+
+    def test_engine_selection_rejects_unsupported_runtime(self):
+        with self.assertRaisesRegex(ValueError, "no supported Blender render engine"):
+            choose_render_engine({"CYCLES"})
+
 
 if __name__ == "__main__":
     unittest.main()
-

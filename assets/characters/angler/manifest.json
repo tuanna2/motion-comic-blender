@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.0",
+  "id": "char_angler",
+  "version": 1,
+  "type": "layered_character",
+  "default_scale": 1.0,
+  "default_appearance": "default",
+  "default_expression": "normal",
+  "pivot": "bottom_center",
+  "anchors": {
+    "bottom_center": {"position": [0, 0]},
+    "head": {"position": [0, 0.47], "parent": "head"},
+    "mouth": {"position": [0, 0.18], "parent": "head"},
+    "hand_right": {"position": [0.72, -0.1], "parent": "forearm"}
+  },
+  "expression_parts": [
+    "eyes_normal",
+    "eyes_angry",
+    "eyes_closed",
+    "eyes_sad",
+    "eyes_surprised",
+    "mouth_closed",
+    "mouth_open",
+    "blush",
+    "tears"
+  ],
+  "expressions": {
+    "normal": ["eyes_normal", "mouth_closed"],
+    "angry": ["eyes_angry", "mouth_closed"],
+    "scared": ["eyes_surprised", "mouth_open"],
+    "happy": ["eyes_closed", "mouth_open"],
+    "sad": ["eyes_sad", "mouth_closed"],
+    "surprised": ["eyes_surprised", "mouth_open"],
+    "blush": ["eyes_normal", "mouth_closed", "blush"],
+    "crying": ["eyes_sad", "mouth_open", "tears"]
+  },
+  "appearances": {
+    "default": {
+      "parts": [
+        {"id": "body", "asset": "generated/body.png", "joint": [0, 1.2], "sprite_offset": [0, 0.35], "width": 1.4, "z": 0.03},
+        {"id": "leg_left_upper", "asset": "generated/leg_left_upper.png", "parent": "body", "joint": [-0.3, -0.25], "sprite_offset": [0, -0.3], "width": 0.34, "z": 0.01},
+        {"id": "leg_left_lower", "asset": "generated/leg_left_lower.png", "parent": "leg_left_upper", "joint": [0, -0.6], "sprite_offset": [0, -0.3], "width": 0.34, "z": 0.01},
+        {"id": "leg_right_upper", "asset": "generated/leg_right_upper.png", "parent": "body", "joint": [0.3, -0.25], "sprite_offset": [0, -0.3], "width": 0.34, "z": 0.02},
+        {"id": "leg_right_lower", "asset": "generated/leg_right_lower.png", "parent": "leg_right_upper", "joint": [0, -0.6], "sprite_offset": [0, -0.3], "width": 0.34, "z": 0.02},
+        {"id": "head", "asset": "generated/head.png", "parent": "body", "joint": [0, 1.05], "sprite_offset": [0, 0.47], "width": 1.3, "z": 0.06},
+        {"id": "arm_left_upper", "asset": "generated/arm_upper.png", "parent": "body", "joint": [-0.45, 0.72], "sprite_offset": [0.38, 0], "width": 0.82, "rotation": 198, "z": 0.025},
+        {"id": "forearm_left", "asset": "generated/forearm.png", "parent": "arm_left_upper", "joint": [0.76, 0], "sprite_offset": [0.36, 0], "width": 0.78, "rotation": -12, "z": 0.025},
+        {"id": "arm_upper", "asset": "generated/arm_upper.png", "parent": "body", "joint": [0.45, 0.72], "sprite_offset": [0.38, 0], "width": 0.82, "rotation": -18, "z": 0.09},
+        {"id": "forearm", "asset": "generated/forearm.png", "parent": "arm_upper", "joint": [0.76, 0], "sprite_offset": [0.36, 0], "width": 0.78, "rotation": 12, "z": 0.09},
+        {"id": "rod", "asset": "generated/rod.png", "parent": "forearm", "joint": [0.72, 0], "sprite_offset": [1.8, 0], "width": 3.8, "rotation": 40, "z": 0.08},
+        {"id": "eyes_normal", "asset": "generated/eyes_normal.png", "parent": "head", "offset": [0, 0.57], "width": 0.68, "z": 0.12},
+        {"id": "eyes_angry", "asset": "generated/eyes_angry.png", "parent": "head", "offset": [0, 0.57], "width": 0.68, "z": 0.13},
+        {"id": "eyes_closed", "asset": "generated/eyes_closed.png", "parent": "head", "offset": [0, 0.57], "width": 0.68, "z": 0.13},
+        {"id": "eyes_sad", "asset": "generated/eyes_sad.png", "parent": "head", "offset": [0, 0.57], "width": 0.68, "z": 0.13},
+        {"id": "eyes_surprised", "asset": "generated/eyes_surprised.png", "parent": "head", "offset": [0, 0.57], "width": 0.68, "z": 0.13},
+        {"id": "mouth_closed", "asset": "generated/mouth_closed.png", "parent": "head", "offset": [0, 0.18], "width": 0.44, "z": 0.14},
+        {"id": "mouth_open", "asset": "generated/mouth_open.png", "parent": "head", "offset": [0, 0.18], "width": 0.34, "z": 0.15},
+        {"id": "blush", "asset": "generated/blush.png", "parent": "head", "offset": [0, 0.38], "width": 0.78, "z": 0.16},
+        {"id": "tears", "asset": "generated/tears.png", "parent": "head", "offset": [0, 0.25], "width": 0.68, "z": 0.17}
+      ]
+    }
+  }
+}

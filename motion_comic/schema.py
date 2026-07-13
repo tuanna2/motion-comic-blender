@@ -7,21 +7,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .action_catalog import ACTION_CATALOG, motion_action_key
 
-SUPPORTED_PRESETS = {
-    "enter",
-    "idle",
-    "talk",
-    "pull_rod",
-    "fish_jump",
-    "shake",
-    "impact",
-    "fall",
-    "camera_zoom",
-    "camera_pan",
-}
+SUPPORTED_PRESETS = set(ACTION_CATALOG)
 
 SUPPORTED_ELEMENT_KINDS = {
+    "character",
+    "prop",
     "fishing_character",
     "fish",
     "image",
@@ -36,6 +28,14 @@ class StoryboardError(ValueError):
 
 
 @dataclass(frozen=True)
+class TTSSettings:
+    voice: str = "vi-VN-HoaiMyNeural"
+    rate: str = "+0%"
+    volume: str = "+0%"
+    pitch: str = "+0Hz"
+
+
+@dataclass(frozen=True)
 class RenderSettings:
     width: int = 1280
     height: int = 720
@@ -43,6 +43,9 @@ class RenderSettings:
     world_height: float = 9.0
     background_color: str = "#111827"
     samples: int = 16
+    asset_library: str = "assets"
+    scene_mode: str = "sprite_2d"
+    tts: TTSSettings = field(default_factory=TTSSettings)
 
 
 @dataclass(frozen=True)
@@ -73,9 +76,12 @@ def _number(value: Any, field_name: str) -> float:
 
 def _validate_motion(motion: dict[str, Any], duration: float, scene_id: str) -> None:
     target = motion.get("target")
-    preset = motion.get("preset")
+    try:
+        action = motion_action_key(motion)
+    except ValueError as exc:
+        raise StoryboardError(f"scene {scene_id}: {exc}") from exc
     _require(isinstance(target, str) and target, f"scene {scene_id}: motion target is required")
-    _require(preset in SUPPORTED_PRESETS, f"scene {scene_id}: unsupported preset {preset!r}")
+    _require(action in SUPPORTED_PRESETS, f"scene {scene_id}: unsupported action {action!r}")
     start = _number(motion.get("start", 0), f"scene {scene_id}: motion start")
     end = _number(motion.get("end", duration), f"scene {scene_id}: motion end")
     _require(start >= 0, f"scene {scene_id}: motion start cannot be negative")
@@ -90,6 +96,12 @@ def _validate_scene(scene: dict[str, Any], index: int) -> None:
     _require(isinstance(scene_id, str) and scene_id, f"scene {index}: id is required")
     duration = _number(scene.get("duration"), f"scene {scene_id}: duration")
     _require(duration > 0, f"scene {scene_id}: duration must be positive")
+    template_ref = scene.get("template_ref")
+    if template_ref is not None:
+        _require(
+            isinstance(template_ref, str) and template_ref,
+            f"scene {scene_id}: template_ref must be a non-empty string",
+        )
 
     elements = scene.get("elements", [])
     motions = scene.get("motions", [])
@@ -99,6 +111,7 @@ def _validate_scene(scene: dict[str, Any], index: int) -> None:
     _require(isinstance(subtitles, list), f"scene {scene_id}: subtitles must be an array")
 
     element_ids: set[str] = set()
+    attachments: list[tuple[str, dict[str, Any]]] = []
     for element in elements:
         _require(isinstance(element, dict), f"scene {scene_id}: each element must be an object")
         element_id = element.get("id")
@@ -108,7 +121,48 @@ def _validate_scene(scene: dict[str, Any], index: int) -> None:
         _require(kind in SUPPORTED_ELEMENT_KINDS, f"scene {scene_id}: unsupported element kind {kind!r}")
         if kind == "image":
             _require(isinstance(element.get("asset"), str), f"scene {scene_id}: image asset is required")
+        if kind in {"character", "prop"}:
+            _require(
+                isinstance(element.get("asset_ref"), str) and element["asset_ref"],
+                f"scene {scene_id}: {kind} asset_ref is required",
+            )
+        if "slot" in element:
+            _require(isinstance(element["slot"], str), f"scene {scene_id}: element slot must be a string")
+        if "scene_anchor" in element:
+            _require(
+                isinstance(element["scene_anchor"], str),
+                f"scene {scene_id}: element scene_anchor must be a string",
+            )
+        visible_start = _number(
+            element.get("visible_start", 0),
+            f"scene {scene_id}: element {element_id} visible_start",
+        )
+        visible_end = _number(
+            element.get("visible_end", duration),
+            f"scene {scene_id}: element {element_id} visible_end",
+        )
+        _require(
+            0 <= visible_start < visible_end <= duration + 1e-6,
+            f"scene {scene_id}: invalid visibility range for element {element_id!r}",
+        )
+        attachment = element.get("attach")
+        if attachment is not None:
+            _require(isinstance(attachment, dict), f"scene {scene_id}: attach must be an object")
+            _require(
+                isinstance(attachment.get("target"), str) and attachment["target"],
+                f"scene {scene_id}: attach target is required",
+            )
+            _require(
+                isinstance(attachment.get("anchor"), str) and attachment["anchor"],
+                f"scene {scene_id}: attach anchor is required",
+            )
+            attachments.append((element_id, attachment))
         element_ids.add(element_id)
+
+    for element_id, attachment in attachments:
+        target = attachment["target"]
+        _require(target in element_ids, f"scene {scene_id}: attachment target {target!r} does not exist")
+        _require(target != element_id, f"scene {scene_id}: element {element_id!r} cannot attach to itself")
 
     for motion in motions:
         _require(isinstance(motion, dict), f"scene {scene_id}: each motion must be an object")
@@ -122,6 +176,18 @@ def _validate_scene(scene: dict[str, Any], index: int) -> None:
         start = _number(subtitle.get("start", 0), f"scene {scene_id}: subtitle start")
         end = _number(subtitle.get("end", duration), f"scene {scene_id}: subtitle end")
         _require(0 <= start < end <= duration + 1e-6, f"scene {scene_id}: invalid subtitle range")
+        speaker = subtitle.get("speaker")
+        if speaker is not None:
+            _require(
+                isinstance(speaker, str) and speaker in element_ids,
+                f"scene {scene_id}: subtitle speaker {speaker!r} does not exist",
+            )
+        for field_name in ("voice", "rate", "volume", "pitch"):
+            if field_name in subtitle:
+                _require(
+                    isinstance(subtitle[field_name], str) and subtitle[field_name],
+                    f"scene {scene_id}: subtitle {field_name} must be a non-empty string",
+                )
 
 
 def load_storyboard(path: str | Path) -> Storyboard:
@@ -139,6 +205,26 @@ def load_storyboard(path: str | Path) -> Storyboard:
 
     raw_settings = data.get("settings", {})
     _require(isinstance(raw_settings, dict), "settings must be an object")
+    raw_tts = raw_settings.get("tts", {})
+    _require(isinstance(raw_tts, dict), "settings.tts must be an object")
+    tts_defaults = {
+        "voice": "vi-VN-HoaiMyNeural",
+        "rate": "+0%",
+        "volume": "+0%",
+        "pitch": "+0Hz",
+    }
+    for field_name, default in tts_defaults.items():
+        value = raw_tts.get(field_name, default)
+        _require(
+            isinstance(value, str) and value,
+            f"settings.tts.{field_name} must be a non-empty string",
+        )
+    tts = TTSSettings(
+        voice=raw_tts.get("voice", tts_defaults["voice"]),
+        rate=raw_tts.get("rate", tts_defaults["rate"]),
+        volume=raw_tts.get("volume", tts_defaults["volume"]),
+        pitch=raw_tts.get("pitch", tts_defaults["pitch"]),
+    )
     settings = RenderSettings(
         width=int(raw_settings.get("width", 1280)),
         height=int(raw_settings.get("height", 720)),
@@ -146,10 +232,17 @@ def load_storyboard(path: str | Path) -> Storyboard:
         world_height=float(raw_settings.get("world_height", 9.0)),
         background_color=str(raw_settings.get("background_color", "#111827")),
         samples=int(raw_settings.get("samples", 16)),
+        asset_library=str(raw_settings.get("asset_library", "assets")),
+        scene_mode=str(raw_settings.get("scene_mode", "sprite_2d")),
+        tts=tts,
     )
     _require(settings.width > 0 and settings.height > 0, "render dimensions must be positive")
     _require(1 <= settings.fps <= 120, "fps must be between 1 and 120")
     _require(settings.world_height > 0, "world_height must be positive")
+    _require(
+        settings.scene_mode in {"sprite_2d", "mmd_3d"},
+        "settings.scene_mode must be 'sprite_2d' or 'mmd_3d'",
+    )
 
     scenes = data.get("scenes")
     _require(isinstance(scenes, list) and scenes, "scenes must be a non-empty array")
@@ -158,4 +251,3 @@ def load_storyboard(path: str | Path) -> Storyboard:
         _validate_scene(scene, index)
 
     return Storyboard(source_path=source_path, title=title, settings=settings, scenes=scenes)
-

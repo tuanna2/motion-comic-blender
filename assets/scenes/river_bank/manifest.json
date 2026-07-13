@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "id": "scene_river_bank",
+  "version": 1,
+  "type": "scene_template",
+  "auto_order": ["left", "right", "center", "far_left", "far_right"],
+  "slots": {
+    "far_left": {"x": -5.6, "y": -3.15, "z": 1.8, "scale": 0.72},
+    "left": {"x": -3.2, "y": -3.25, "z": 2.0, "scale": 0.9},
+    "center": {"x": 0.0, "y": -3.25, "z": 2.2, "scale": 0.95},
+    "right": {"x": 3.2, "y": -3.25, "z": 2.0, "scale": 0.9},
+    "far_right": {"x": 5.6, "y": -3.15, "z": 1.8, "scale": 0.72}
+  },
+  "anchors": {
+    "shore_left": {"x": -2.8, "y": -3.0, "z": 2.0},
+    "water_center": {"x": 3.4, "y": -2.3, "z": 3.0},
+    "water_right": {"x": 5.2, "y": -2.3, "z": 3.0}
+  }
+}

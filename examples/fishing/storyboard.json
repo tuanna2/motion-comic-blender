@@ -7,11 +7,19 @@
     "fps": 30,
     "world_height": 9,
     "background_color": "#0f172a",
-    "samples": 16
+    "samples": 16,
+    "asset_library": "../../assets",
+    "tts": {
+      "voice": "vi-VN-HoaiMyNeural",
+      "rate": "+8%",
+      "volume": "+0%",
+      "pitch": "+0Hz"
+    }
   },
   "scenes": [
     {
       "id": "river_intro",
+      "template_ref": "scene_river_bank@1",
       "duration": 4.0,
       "background_color": "#7dd3fc",
       "elements": [
@@ -37,12 +45,22 @@
         },
         {
           "id": "angler",
-          "kind": "fishing_character",
-          "x": -3.2,
-          "y": -1.15,
-          "z": 2,
-          "scale": 0.9,
-          "color": "#ef4444"
+          "kind": "character",
+          "asset_ref": "char_angler@1",
+          "appearance": "default",
+          "expression": "normal",
+          "slot": "left"
+        },
+        {
+          "id": "angler_hat",
+          "kind": "prop",
+          "asset_ref": "prop_straw_hat@1",
+          "attach": {
+            "target": "angler",
+            "anchor": "head",
+            "offset": [0, 0.5],
+            "z": 0.3
+          }
         }
       ],
       "motions": [
@@ -55,10 +73,10 @@
         },
         {
           "target": "angler",
-          "preset": "talk",
-          "start": 1.0,
-          "end": 3.2,
-          "params": {"pulses": 12, "open": 3.2}
+          "preset": "nod",
+          "start": 1.1,
+          "end": 2.8,
+          "params": {"cycles": 2, "degrees": 9}
         },
         {
           "target": "angler",
@@ -79,12 +97,14 @@
         {
           "start": 1.0,
           "end": 3.4,
-          "text": "Hôm nay nhất định phải bắt được cá lớn!"
+          "text": "Hôm nay nhất định phải bắt được cá lớn!",
+          "speaker": "angler"
         }
       ]
     },
     {
       "id": "big_catch",
+      "template_ref": "scene_river_bank@1",
       "duration": 6.0,
       "background_color": "#60a5fa",
       "elements": [
@@ -110,19 +130,27 @@
         },
         {
           "id": "angler",
-          "kind": "fishing_character",
-          "x": -2.8,
-          "y": -1.15,
-          "z": 2,
-          "scale": 0.9,
-          "color": "#ef4444"
+          "kind": "character",
+          "asset_ref": "char_angler@1",
+          "appearance": "default",
+          "expression": "angry",
+          "slot": "left"
+        },
+        {
+          "id": "angler_hat",
+          "kind": "prop",
+          "asset_ref": "prop_straw_hat@1",
+          "attach": {
+            "target": "angler",
+            "anchor": "head",
+            "offset": [0, 0.5],
+            "z": 0.3
+          }
         },
         {
           "id": "monster_fish",
           "kind": "fish",
-          "x": 5.2,
-          "y": -2.3,
-          "z": 3,
+          "scene_anchor": "water_right",
           "scale": 1.25,
           "color": "#f59e0b"
         },
@@ -134,7 +162,9 @@
           "z": 8,
           "size": 1.1,
           "text": "CÁ KHỔNG LỒ!",
-          "color": "#fef08a"
+          "color": "#fef08a",
+          "visible_start": 2.2,
+          "visible_end": 3.2
         }
       ],
       "motions": [
@@ -185,15 +215,16 @@
         {
           "start": 0.3,
           "end": 2.2,
-          "text": "Cắn câu rồi... kéo!"
+          "text": "Cắn câu rồi... kéo!",
+          "speaker": "angler"
         },
         {
           "start": 3.0,
           "end": 5.5,
-          "text": "Khoan, con cá này lớn quá!"
+          "text": "Khoan, con cá này lớn quá!",
+          "speaker": "angler"
         }
       ]
     }
   ]
 }
-

@@ -9,6 +9,9 @@ from typing import Any
 
 import bpy
 
+from .registry import AssetRegistry
+from .rig import order_rig_parts, point2
+
 
 def hex_color(value: str) -> tuple[float, float, float, float]:
     raw = value.strip().lstrip("#")
@@ -139,6 +142,14 @@ class AssetBundle:
     root: Any
     renderables: list[Any] = field(default_factory=list)
     parts: dict[str, Any] = field(default_factory=dict)
+    initial_visibility: dict[str, bool] = field(default_factory=dict)
+    anchors: dict[str, tuple[float, float]] = field(default_factory=dict)
+    anchor_parents: dict[str, Any] = field(default_factory=dict)
+    backend: str = "sprite2d"
+    armature: Any | None = None
+    morphs: dict[str, Any] = field(default_factory=dict)
+    action_set: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 def _parent(child, parent, location) -> None:
@@ -204,7 +215,153 @@ def create_fish(name: str, element: dict[str, Any]) -> AssetBundle:
     return AssetBundle(root=root, renderables=[body, tail, eye], parts={"tail": tail, "eye": eye})
 
 
-def create_element(scene_id: str, element: dict[str, Any], asset_root: Path) -> AssetBundle:
+def create_layered_character(
+    name: str,
+    element: dict[str, Any],
+    asset_registry: AssetRegistry,
+) -> AssetBundle:
+    manifest = asset_registry.resolve(str(element["asset_ref"]), "layered_character")
+    data = manifest.data
+    appearance_id = str(element.get("appearance", data.get("default_appearance", "default")))
+    appearance = data["appearances"].get(appearance_id)
+    if not isinstance(appearance, dict):
+        raise ValueError(f"unknown appearance {appearance_id!r} for {manifest.reference}")
+    part_definitions = appearance.get("parts")
+    if not isinstance(part_definitions, list) or not part_definitions:
+        raise ValueError(f"appearance {appearance_id!r} has no parts in {manifest.path}")
+
+    root = bpy.data.objects.new(name, None)
+    bpy.context.scene.collection.objects.link(root)
+    root.location = (
+        float(element.get("x", 0)),
+        float(element.get("y", 0)),
+        float(element.get("z", 2)),
+    )
+    scale = float(element.get("scale", 1.0)) * float(data.get("default_scale", 1.0))
+    root.scale = (scale,) * 3
+
+    expression_id = str(element.get("expression", data.get("default_expression", "normal")))
+    expressions = data.get("expressions", {})
+    expression_parts = set(data.get("expression_parts", []))
+    selected_parts = expressions.get(expression_id)
+    if selected_parts is None:
+        raise ValueError(f"unknown expression {expression_id!r} for {manifest.reference}")
+    if not isinstance(selected_parts, list):
+        raise ValueError(f"expression {expression_id!r} must be an array in {manifest.path}")
+    visible_expression_parts = set(selected_parts)
+
+    renderables: list[Any] = []
+    parts: dict[str, Any] = {}
+    controllers: dict[str, Any] = {}
+    initial_visibility: dict[str, bool] = {}
+    for part in order_rig_parts(part_definitions):
+        if not isinstance(part, dict) or not isinstance(part.get("id"), str):
+            raise ValueError(f"invalid character part in {manifest.path}")
+        part_id = str(part["id"])
+        asset = part.get("asset")
+        if not isinstance(asset, str):
+            raise ValueError(f"part {part_id!r} is missing asset in {manifest.path}")
+        parent_id = part.get("parent")
+        parent_controller = root if parent_id is None else controllers[str(parent_id)]
+        obj = create_image(
+            f"{name}.{part_id}_sprite",
+            (manifest.directory / asset).resolve(),
+            location=(0, 0, 0),
+            width=float(part.get("width", 1.0)),
+            height=float(part["height"]) if "height" in part else None,
+        )
+        joint = part.get("joint")
+        if joint is not None:
+            joint_x, joint_y = point2(joint, f"part {part_id!r} joint")
+            controller = bpy.data.objects.new(f"{name}.{part_id}_ctrl", None)
+            bpy.context.scene.collection.objects.link(controller)
+            controller.empty_display_type = "CIRCLE"
+            controller.empty_display_size = 0.12
+            controller["motion_comic_part"] = part_id
+            _parent(controller, parent_controller, (joint_x, joint_y, 0))
+            controller.rotation_euler.z = math.radians(float(part.get("rotation", 0)))
+            sprite_offset = part.get("sprite_offset", part.get("offset", [0, 0]))
+            offset_x, offset_y = point2(sprite_offset, f"part {part_id!r} sprite_offset")
+            _parent(obj, controller, (offset_x, offset_y, float(part.get("z", 0))))
+            controllers[part_id] = controller
+            parts[part_id] = controller
+            parts[f"{part_id}_sprite"] = obj
+        else:
+            offset_x, offset_y = point2(part.get("offset", [0, 0]), f"part {part_id!r} offset")
+            _parent(obj, parent_controller, (offset_x, offset_y, float(part.get("z", 0))))
+            obj.rotation_euler.z = math.radians(float(part.get("rotation", 0)))
+            parts[part_id] = obj
+        renderables.append(obj)
+        initial_visibility[obj.name] = part_id not in expression_parts or part_id in visible_expression_parts
+
+    anchors: dict[str, tuple[float, float]] = {}
+    anchor_parents: dict[str, Any] = {}
+    for anchor_id, definition in data.get("anchors", {}).items():
+        anchor_name = str(anchor_id)
+        if isinstance(definition, dict):
+            anchors[anchor_name] = point2(definition.get("position"), f"anchor {anchor_name!r}")
+            parent_id = definition.get("parent")
+            if parent_id is not None:
+                if str(parent_id) not in controllers:
+                    raise ValueError(f"anchor {anchor_name!r} references unknown controller {parent_id!r}")
+                anchor_parents[anchor_name] = controllers[str(parent_id)]
+        elif isinstance(definition, list):
+            anchors[anchor_name] = point2(definition, f"anchor {anchor_name!r}")
+
+    # Generic aliases let existing motion presets work with any manifest whose
+    # concrete part names follow the documented mouth/arm/rod convention.
+    if "mouth_closed" in parts:
+        parts["mouth"] = parts["mouth_closed"]
+    return AssetBundle(
+        root=root,
+        renderables=renderables,
+        parts=parts,
+        initial_visibility=initial_visibility,
+        anchors=anchors,
+        anchor_parents=anchor_parents,
+    )
+
+
+def create_sprite_prop(
+    name: str,
+    element: dict[str, Any],
+    asset_registry: AssetRegistry,
+) -> AssetBundle:
+    manifest = asset_registry.resolve(str(element["asset_ref"]), "sprite_prop")
+    data = manifest.data
+    obj = create_image(
+        name,
+        (manifest.directory / str(data["asset"])).resolve(),
+        location=(
+            float(element.get("x", 0)),
+            float(element.get("y", 0)),
+            float(element.get("z", 3)),
+        ),
+        width=float(element.get("width", data.get("width", 1.0))),
+        height=(
+            float(element["height"])
+            if "height" in element
+            else float(data["height"])
+            if "height" in data
+            else None
+        ),
+    )
+    obj.rotation_euler.z = math.radians(float(element.get("rotation", data.get("rotation", 0))))
+    scale = float(element.get("scale", 1.0)) * float(data.get("default_scale", 1.0))
+    obj.scale = tuple(axis * scale for axis in obj.scale)
+    anchors: dict[str, tuple[float, float]] = {}
+    for anchor_id, point in data.get("anchors", {}).items():
+        if isinstance(point, list) and len(point) >= 2:
+            anchors[str(anchor_id)] = (float(point[0]), float(point[1]))
+    return AssetBundle(root=obj, renderables=[obj], anchors=anchors)
+
+
+def create_element(
+    scene_id: str,
+    element: dict[str, Any],
+    storyboard_dir: Path,
+    asset_registry: AssetRegistry | None = None,
+) -> AssetBundle:
     local_id = str(element["id"])
     name = f"{scene_id}.{local_id}"
     kind = element["kind"]
@@ -213,6 +370,23 @@ def create_element(scene_id: str, element: dict[str, Any], asset_root: Path) -> 
         float(element.get("y", 0)),
         float(element.get("z", 1)),
     )
+    if kind == "character":
+        if asset_registry is None:
+            raise ValueError("character elements require a configured asset library")
+        manifest = asset_registry.resolve(str(element["asset_ref"]))
+        if manifest.asset_type == "layered_character":
+            return create_layered_character(name, element, asset_registry)
+        if manifest.asset_type == "mmd_character":
+            from .mmd_assets import create_mmd_character
+
+            return create_mmd_character(name, element, asset_registry, manifest=manifest)
+        raise ValueError(
+            f"character asset {manifest.reference} has unsupported type {manifest.asset_type!r}"
+        )
+    if kind == "prop":
+        if asset_registry is None:
+            raise ValueError("prop elements require a configured asset library")
+        return create_sprite_prop(name, element, asset_registry)
     if kind == "fishing_character":
         return create_fishing_character(name, element)
     if kind == "fish":
@@ -220,7 +394,7 @@ def create_element(scene_id: str, element: dict[str, Any], asset_root: Path) -> 
     if kind == "image":
         obj = create_image(
             name,
-            (asset_root / str(element["asset"])).resolve(),
+            (storyboard_dir / str(element["asset"])).resolve(),
             location=location,
             width=float(element.get("width", 2.0)),
             height=float(element["height"]) if "height" in element else None,
@@ -245,4 +419,3 @@ def create_element(scene_id: str, element: dict[str, Any], asset_root: Path) -> 
     scale = float(element.get("scale", 1.0))
     obj.scale = tuple(axis * scale for axis in obj.scale)
     return AssetBundle(root=obj, renderables=[obj])
-
