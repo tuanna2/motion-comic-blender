@@ -3,7 +3,7 @@
   "$id": "https://motion-comic.local/schemas/series.schema.json",
   "title": "Motion Comic Series Registry",
   "type": "object",
-  "required": ["version", "series_id", "language", "story_rules", "narrator", "characters", "crowd"],
+  "required": ["version", "series_id", "language", "story_rules", "narrator", "characters", "locations", "production", "crowd"],
   "properties": {
     "version": {"const": "1.0"},
     "series_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
@@ -20,6 +20,8 @@
     "relationships": {"type": "array"},
     "story_rules": {"type": "object"},
     "narrator": {"type": "object"},
+    "locations": {"type": "array", "minItems": 1},
+    "production": {"type": "object"},
     "crowd": {"type": "object"}
   }
 }

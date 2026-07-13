@@ -147,6 +147,29 @@ def load_series(path: str | Path) -> SeriesRegistry:
     for index, profile in enumerate(voice_pool):
         _validate_voice(profile, f"crowd.speaking_voice_pool[{index}]")
 
+    locations = data.get("locations")
+    _require(isinstance(locations, list) and locations, "series locations are required")
+    location_ids: set[str] = set()
+    for index, location in enumerate(locations):
+        _require(isinstance(location, dict), f"location {index} must be an object")
+        location_id = location.get("id")
+        _require(
+            isinstance(location_id, str) and ID_PATTERN.match(location_id) is not None,
+            f"location {index} has invalid id",
+        )
+        _require(location_id not in location_ids, f"duplicate location id {location_id!r}")
+        _require(
+            isinstance(location.get("asset_ref"), str) and location["asset_ref"],
+            f"location {location_id!r} asset_ref is required",
+        )
+        location_ids.add(location_id)
+    production = data.get("production")
+    _require(isinstance(production, dict), "series production settings are required")
+    _require(
+        production.get("default_location_id") in location_ids,
+        "production.default_location_id must reference a location",
+    )
+
     for index, relationship in enumerate(data.get("relationships", [])):
         _require(isinstance(relationship, dict), f"relationship {index} must be an object")
         _require(relationship.get("from") in ids, f"relationship {index} has unknown from character")

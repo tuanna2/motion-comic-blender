@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0",
+  "id": "scene_office",
+  "version": 1,
+  "type": "scene_template",
+  "scene_mode": "mmd_3d",
+  "auto_order": [
+    "left",
+    "right",
+    "center",
+    "far_left",
+    "far_right"
+  ],
+  "slots": {
+    "far_left": {
+      "x": -5.6,
+      "y": 0,
+      "z": 0,
+      "scale": 2.45
+    },
+    "left": {
+      "x": -3,
+      "y": 0,
+      "z": 0,
+      "scale": 2.8
+    },
+    "center": {
+      "x": 0,
+      "y": 0.2,
+      "z": 0,
+      "scale": 3
+    },
+    "right": {
+      "x": 3,
+      "y": 0,
+      "z": 0,
+      "scale": 2.8
+    },
+    "far_right": {
+      "x": 5.6,
+      "y": 0,
+      "z": 0,
+      "scale": 2.45
+    }
+  },
+  "anchors": {
+    "center": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "entrance_left": {
+      "x": -6,
+      "y": 0,
+      "z": 0
+    },
+    "entrance_right": {
+      "x": 6,
+      "y": 0,
+      "z": 0
+    }
+  },
+  "environment": {
+    "background": "#0f172a",
+    "floor": "#334155",
+    "horizon": "#1e293b",
+    "accents": [
+      "#22d3ee",
+      "#e2e8f0"
+    ],
+    "depth": 14,
+    "lighting": {
+      "key": "#fff7ed",
+      "fill": "#bfdbfe",
+      "energy": 700
+    }
+  }
+}

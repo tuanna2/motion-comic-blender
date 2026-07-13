@@ -1,0 +1,63 @@
+{
+  "version": "1.0",
+  "title": "Tiếng bước chân trong hẻm",
+  "scenes": [
+    {
+      "id": "beat_0001",
+      "location_id": "urban_alley",
+      "characters": ["char_minh_khang", "char_an_nhien"],
+      "speech": [
+        {
+          "speaker": "char_minh_khang",
+          "text": "Tôi nghe tiếng bước chân dừng lại ngay sau lưng.",
+          "narration": true,
+          "pause_after": 0.25
+        },
+        {
+          "speaker": "char_an_nhien",
+          "text": "Khang, đừng quay lại.",
+          "narration": false
+        }
+      ],
+      "visual_beats": [
+        {
+          "actor": "char_minh_khang",
+          "action": "look_over_shoulder",
+          "start": 0,
+          "duration": 2.0,
+          "params": {}
+        },
+        {
+          "actor": "char_an_nhien",
+          "target": "char_minh_khang",
+          "recipe": "dramatic_reveal",
+          "start": 2.0,
+          "duration": 2.5,
+          "params": {}
+        }
+      ]
+    },
+    {
+      "id": "beat_0002",
+      "location_id": "apartment",
+      "characters": ["char_minh_khang", "char_an_nhien", "char_tran_vu"],
+      "speech": [
+        {
+          "speaker": "char_tran_vu",
+          "text": "Hai người đã nhìn thấy thứ không nên nhìn thấy.",
+          "narration": false
+        }
+      ],
+      "visual_beats": [
+        {
+          "actor": "char_tran_vu",
+          "target": "char_minh_khang",
+          "recipe": "heated_argument",
+          "start": 0,
+          "duration": 4.0,
+          "params": {}
+        }
+      ]
+    }
+  ]
+}

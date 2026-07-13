@@ -16,6 +16,8 @@
     "armature": {"type": "string", "minLength": 1},
     "scale": {"type": "number", "exclusiveMinimum": 0},
     "disable_physics": {"type": "boolean"},
+    "material_tint": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+    "material_tint_strength": {"type": "number", "minimum": 0, "maximum": 1},
     "morphs": {
       "type": "object",
       "additionalProperties": {

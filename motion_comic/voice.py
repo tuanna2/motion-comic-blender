@@ -46,33 +46,27 @@ class VoiceLine:
 
 
 def collect_voice_lines(storyboard: Storyboard) -> list[VoiceLine]:
-    """Collect subtitles that declare a speaker into deterministic TTS jobs.
-
-    ``lip_sync: false`` keeps speech in the audio timeline but emits no mouth
-    cues. This supports off-screen and first-person narration without forcing a
-    visible character to mouth every narrated sentence.
-    """
+    """Collect subtitles that declare a speaker into deterministic TTS jobs."""
     lines: list[VoiceLine] = []
     scene_offset = 0.0
     defaults = storyboard.settings.tts
     for scene in storyboard.scenes:
         duration = float(scene["duration"])
-        element_ids = {str(item.get("id")) for item in scene.get("elements", [])}
         for index, subtitle in enumerate(scene.get("subtitles", [])):
             speaker = subtitle.get("speaker")
             if not isinstance(speaker, str) or not speaker:
                 continue
-            lip_sync_enabled = bool(subtitle.get("lip_sync", True))
-            target = speaker if lip_sync_enabled and speaker in element_ids else ""
+            start = float(subtitle.get("start", 0))
+            end = float(subtitle.get("end", duration))
             lines.append(
                 VoiceLine(
                     scene_id=str(scene["id"]),
                     subtitle_index=index,
-                    target=target,
+                    target=speaker,
                     text=str(subtitle["text"]),
-                    start=float(subtitle.get("start", 0)),
-                    end=float(subtitle.get("end", duration)),
-                    global_start=scene_offset + float(subtitle.get("start", 0)),
+                    start=start,
+                    end=end,
+                    global_start=scene_offset + start,
                     scene_duration=duration,
                     voice=str(subtitle.get("voice", defaults.voice)),
                     rate=str(subtitle.get("rate", defaults.rate)),
@@ -86,8 +80,6 @@ def collect_voice_lines(storyboard: Storyboard) -> list[VoiceLine]:
 
 def word_boundaries_to_cues(line: VoiceLine, boundaries: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Convert Edge-TTS 100-nanosecond word boundaries into mouth-open intervals."""
-    if not line.target:
-        return []
     cues: list[dict[str, Any]] = []
     for boundary in boundaries:
         offset = float(boundary.get("offset", 0)) / EDGE_TTS_TICKS_PER_SECOND

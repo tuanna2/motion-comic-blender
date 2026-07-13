@@ -8,12 +8,48 @@ from typing import Any
 
 import bpy
 
-from .assets import AssetBundle
+from .assets import AssetBundle, hex_color
+from .cache import cached_artifact
 from .registry import AssetManifest, AssetRegistry
 
 
 class MMDAssetError(ValueError):
     """Raised when a compiled MMD character cannot be loaded safely."""
+
+
+def _mix_color(base, tint, strength: float):
+    return tuple(base[index] * (1.0 - strength) + tint[index] * strength for index in range(3))
+
+
+def _apply_material_tint(objects, value: str | None, strength: float) -> None:
+    """Create per-character material copies and apply a subtle identity tint."""
+    if not value or strength <= 0:
+        return
+    tint = hex_color(value)
+    strength = min(1.0, max(0.0, strength))
+    for obj in objects:
+        if obj.type != "MESH":
+            continue
+        for slot in obj.material_slots:
+            material = slot.material
+            if material is None:
+                continue
+            material = material.copy()
+            slot.material = material
+            diffuse = tuple(material.diffuse_color)
+            mixed = _mix_color(diffuse, tint, strength)
+            material.diffuse_color = (*mixed, diffuse[3])
+            if not material.use_nodes or material.node_tree is None:
+                continue
+            for node in material.node_tree.nodes:
+                if node.type != "BSDF_PRINCIPLED":
+                    continue
+                base_input = node.inputs.get("Base Color")
+                if base_input is None:
+                    continue
+                base = tuple(base_input.default_value)
+                mixed = _mix_color(base, tint, strength)
+                base_input.default_value = (*mixed, base[3])
 
 
 def _matches_blender_name(actual: str, requested: str) -> bool:
@@ -36,16 +72,17 @@ def _find_object(objects, requested: str, *, object_type: str | None = None):
 def _append_collection(blend_path: Path, collection_name: str):
     if not blend_path.is_file():
         raise MMDAssetError(f"compiled MMD blend not found: {blend_path}")
-    with bpy.data.libraries.load(str(blend_path), link=False) as (source, target):
+    runtime_blend = cached_artifact(blend_path)
+    with bpy.data.libraries.load(str(runtime_blend), link=False) as (source, target):
         if collection_name not in source.collections:
             available = ", ".join(source.collections) or "none"
             raise MMDAssetError(
-                f"collection {collection_name!r} is missing from {blend_path}; available: {available}"
+                f"collection {collection_name!r} is missing from {runtime_blend}; available: {available}"
             )
         target.collections = [collection_name]
     collection = target.collections[0]
     if collection is None:
-        raise MMDAssetError(f"failed to append collection {collection_name!r} from {blend_path}")
+        raise MMDAssetError(f"failed to append collection {collection_name!r} from {runtime_blend}")
     bpy.context.scene.collection.children.link(collection)
     return collection
 
@@ -114,6 +151,12 @@ def create_mmd_character(
             rigid_body = getattr(obj, "rigid_body", None)
             if rigid_body is not None:
                 rigid_body.kinematic = True
+
+    _apply_material_tint(
+        objects,
+        str(data["material_tint"]) if data.get("material_tint") else None,
+        float(data.get("material_tint_strength", 0.0)),
+    )
 
     morphs = _collect_shape_keys(objects, dict(data.get("morphs", {})))
     # MMD Tools stores collision/physics helpers as hidden mesh objects in the

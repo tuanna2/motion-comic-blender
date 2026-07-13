@@ -11,6 +11,7 @@ from typing import Any
 import bpy
 
 from .action_catalog import motion_action_key, resolve_action
+from .action_recipes import expand_action_recipes
 from .assets import AssetBundle, create_element, create_flat_object, create_text, hex_color
 from .backends import MMDActionBackend, SpriteActionBackend
 from .camera import camera_baseline
@@ -22,6 +23,7 @@ from .lipsync import LipCue, cue_frame_range, load_lip_sync
 from .motions import apply_motion
 from .registry import AssetRegistry
 from .schema import Storyboard, load_storyboard
+from .spaces import create_scene_space
 
 
 def reset_blender() -> None:
@@ -221,7 +223,18 @@ def _scene_background(
     world_width: float,
     world_height: float,
     scene_mode: str,
+    template=None,
 ):
+    if template is not None:
+        environment = template.data.get("environment")
+        if isinstance(environment, dict):
+            return create_scene_space(
+                scene_id,
+                environment,
+                world_width=world_width,
+                world_height=world_height,
+                scene_mode=scene_mode,
+            )
     color = str(scene_data.get("background_color", "#7dd3fc"))
     obj = create_flat_object(
         f"{scene_id}.background",
@@ -283,7 +296,14 @@ def build_storyboard(
         library_path = (storyboard_dir / storyboard.settings.asset_library).resolve()
         asset_registry = AssetRegistry(library_path).scan()
 
-    for scene_data in storyboard.scenes:
+    for raw_scene_data in storyboard.scenes:
+        scene_data = raw_scene_data
+        if asset_registry is not None and raw_scene_data.get("recipes"):
+            scene_data = expand_action_recipes(
+                raw_scene_data,
+                asset_registry,
+                storyboard.settings.action_recipes,
+            )
         scene_id = str(scene_data["id"])
         duration_frames = round(float(scene_data["duration"]) * fps)
         scene_start = current_frame
@@ -301,7 +321,7 @@ def build_storyboard(
         resolved_elements = resolve_scene_elements(scene_data.get("elements", []), template)
 
         background = _scene_background(
-            scene_id, scene_data, world_width, world_height, scene_mode
+            scene_id, scene_data, world_width, world_height, scene_mode, template
         )
         _show_during(background, scene_start, scene_end)
 
@@ -350,6 +370,8 @@ def build_storyboard(
             action_key = motion_action_key(motion)
             if action_key is None:
                 raise ValueError(f"motion for {target!r} is missing action")
+            if resolve_action(action_key).category == "effect":
+                continue
             start = scene_start + round(float(motion.get("start", 0)) * fps)
             end = scene_start + round(float(motion.get("end", scene_data["duration"])) * fps)
             end = min(scene_end, end)

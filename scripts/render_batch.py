@@ -62,6 +62,8 @@ def run_job(job: BatchJob, plan, args, status: dict, lock: threading.Lock) -> tu
         record["reason"] = "output_exists"
         save_status(plan.status_path, status, lock)
         return job.job_id, "skipped"
+    if record.get("state") == "completed" and not args.force:
+        record["state"] = "pending"
 
     commands = build_job_commands(
         plan,
@@ -85,8 +87,19 @@ def run_job(job: BatchJob, plan, args, status: dict, lock: threading.Lock) -> tu
         record["started_at"] = datetime.now(timezone.utc).isoformat()
         save_status(plan.status_path, status, lock)
         try:
-            for command in commands:
-                subprocess.run(command, cwd=ROOT, check=True)
+            for command_index, command in enumerate(commands, start=1):
+                record["stage"] = f"command_{command_index}_of_{len(commands)}"
+                record["command"] = command
+                save_status(plan.status_path, status, lock)
+                subprocess.run(
+                    command,
+                    cwd=ROOT,
+                    check=True,
+                    env={
+                        **os.environ,
+                        "MOTION_COMIC_ASSET_CACHE": str(plan.asset_cache_dir),
+                    },
+                )
             record["state"] = "completed"
             record["finished_at"] = datetime.now(timezone.utc).isoformat()
             save_status(plan.status_path, status, lock)
@@ -119,6 +132,17 @@ def main() -> int:
         subprocess.run([args.python_bin, str(ROOT / "scripts/generate_demo_assets.py")], cwd=ROOT, check=True)
 
     status = empty_status(plan)
+    if plan.status_path.is_file() and not args.force:
+        try:
+            previous = json.loads(plan.status_path.read_text(encoding="utf-8"))
+            previous_records = previous.get("episodes", {})
+            for job_id, record in status["episodes"].items():
+                if isinstance(previous_records.get(job_id), dict):
+                    record.update(previous_records[job_id])
+                    if record.get("state") in {"running", "retrying"}:
+                        record["state"] = "interrupted"
+        except (OSError, json.JSONDecodeError, AttributeError):
+            pass
     lock = threading.Lock()
     save_status(plan.status_path, status, lock)
     failures = 0

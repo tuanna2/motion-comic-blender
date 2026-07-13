@@ -2,9 +2,19 @@
   "version": "1.0",
   "output_dir": "../output/batch",
   "cache_dir": "../output/.voice-cache",
+  "asset_cache_dir": "../output/.asset-cache",
+  "asset_root": "../assets",
+  "series": "../series/urban_mystery/series.json",
   "status_file": "batch_status.json",
   "retries": 1,
   "episodes": [
+    {
+      "id": "urban-mmd-plan",
+      "episode_plan": "production/episode_plan.json",
+      "output": "urban-mmd-plan.mp4",
+      "voice": true,
+      "save_blend": false
+    },
     {
       "id": "fishing-01",
       "storyboard": "fishing/storyboard.json",

@@ -18,6 +18,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from motion_comic.series import SeriesError, load_series, validate_story_source  # noqa: E402
+from motion_comic.compiler import compile_episode_plan  # noqa: E402
 from motion_comic.story_prompt import build_story_creation_prompt  # noqa: E402
 from motion_comic.storyboard_ai import (  # noqa: E402
     build_storyboard_creation_prompt,
@@ -101,6 +102,9 @@ def make_handler(series_path: Path, html_path: Path):
                 else:
                     json_response(self, 200, job.public())
                 return
+            if path == "/api/render-jobs":
+                json_response(self, 200, {"jobs": render_jobs.list()})
+                return
             if path == "/api/render-file":
                 job_id = query.get("job_id", [""])[0]
                 kind = query.get("kind", ["video"])[0]
@@ -152,7 +156,8 @@ def make_handler(series_path: Path, html_path: Path):
                     return
 
                 if path == "/api/validate-storyboard":
-                    storyboard = parse_json_text(body.get("storyboard"), "storyboard")
+                    plan = parse_json_text(body.get("storyboard"), "storyboard")
+                    storyboard = compile_episode_plan(plan, series, asset_root=ROOT / "assets")
                     raw_story_source = body.get("story_source")
                     story_source = (
                         parse_json_text(raw_story_source, "story_source")
@@ -182,7 +187,8 @@ def make_handler(series_path: Path, html_path: Path):
                     return
 
                 if path == "/api/render":
-                    storyboard = parse_json_text(body.get("storyboard"), "storyboard")
+                    plan = parse_json_text(body.get("storyboard"), "storyboard")
+                    storyboard = compile_episode_plan(plan, series, asset_root=ROOT / "assets")
                     raw_story_source = body.get("story_source")
                     story_source = (
                         parse_json_text(raw_story_source, "story_source")
@@ -201,6 +207,16 @@ def make_handler(series_path: Path, html_path: Path):
                         if body.get("blender_bin") is not None
                         else None,
                     )
+                    json_response(self, 202, job.public())
+                    return
+
+                if path == "/api/render-cancel":
+                    job = render_jobs.cancel(str(body.get("job_id", "")))
+                    json_response(self, 200, job.public())
+                    return
+
+                if path == "/api/render-resume":
+                    job = render_jobs.resume(str(body.get("job_id", "")))
                     json_response(self, 202, job.public())
                     return
 

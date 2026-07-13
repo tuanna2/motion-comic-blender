@@ -35,7 +35,8 @@
       "speech_style": "Câu ngắn, rõ ràng, ít khoa trương; khi kể chuyện thường quan sát chi tiết và tự chất vấn bản thân.",
       "visual": {
         "asset_id": "char_minh_khang",
-        "asset_status": "planned",
+        "asset_ref": "char_minh_khang@1",
+        "asset_status": "ready_shared_mmd_demo",
         "palette": ["#0f172a", "#1d4ed8", "#67e8f9"],
         "skin_tone": "light_medium_warm",
         "face": "Khuôn mặt hơi góc cạnh, lông mày thẳng, ánh mắt tập trung.",
@@ -74,7 +75,8 @@
       "speech_style": "Nói tự nhiên, trực tiếp nhưng không thô; hay đặt câu hỏi để buộc người khác nói thật.",
       "visual": {
         "asset_id": "char_an_nhien",
-        "asset_status": "planned",
+        "asset_ref": "char_an_nhien@1",
+        "asset_status": "ready_shared_mmd_demo",
         "palette": ["#fff7ed", "#fb7185", "#7c2d12"],
         "skin_tone": "light_warm",
         "face": "Khuôn mặt trái xoan, mắt sáng, biểu cảm thay đổi rõ.",
@@ -113,7 +115,8 @@
       "speech_style": "Nói chậm, ít từ, thường dùng câu khẳng định; hiếm khi giải thích toàn bộ ý định.",
       "visual": {
         "asset_id": "char_tran_vu",
-        "asset_status": "planned",
+        "asset_ref": "char_tran_vu@1",
+        "asset_status": "ready_shared_mmd_demo",
         "palette": ["#111827", "#7f1d1d", "#d1d5db"],
         "skin_tone": "medium_neutral",
         "face": "Mặt dài, gò má rõ, mắt hẹp và ít chớp.",
@@ -152,7 +155,8 @@
       "speech_style": "Nói chậm, dùng hình ảnh ẩn dụ vừa phải; khi cảnh báo sẽ rất ngắn và dứt khoát.",
       "visual": {
         "asset_id": "char_ba_hanh",
-        "asset_status": "planned",
+        "asset_ref": "char_ba_hanh@1",
+        "asset_status": "ready_shared_mmd_demo",
         "palette": ["#365314", "#a16207", "#fef3c7"],
         "skin_tone": "medium_warm_aged",
         "face": "Khuôn mặt tròn có nếp nhăn nhẹ, ánh mắt bình tĩnh và sắc.",
@@ -191,7 +195,8 @@
       "speech_style": "Giọng mềm và chậm, thường nói nửa thật nửa đùa; khi mất bình tĩnh sẽ chuyển sang câu rất ngắn.",
       "visual": {
         "asset_id": "char_le_huyen",
-        "asset_status": "planned",
+        "asset_ref": "char_le_huyen@1",
+        "asset_status": "ready_shared_mmd_demo",
         "palette": ["#1e1b4b", "#7e22ce", "#e9d5ff"],
         "skin_tone": "light_cool",
         "face": "Mặt chữ V nhẹ, mắt dài, nốt ruồi nhỏ dưới mắt trái.",
@@ -252,6 +257,43 @@
       "initial_state": "Hai người trao đổi thông tin nhưng luôn đề phòng nhau."
     }
   ],
+  "locations": [
+    {
+      "id": "urban_alley",
+      "name": "Hẻm đô thị ban đêm",
+      "asset_ref": "scene_urban_alley@1",
+      "keywords": ["hẻm", "ngõ", "đường phố", "ban đêm", "mưa"]
+    },
+    {
+      "id": "apartment",
+      "name": "Căn hộ của Minh Khang",
+      "asset_ref": "scene_apartment@1",
+      "keywords": ["căn hộ", "phòng khách", "phòng ngủ", "nhà"]
+    },
+    {
+      "id": "office",
+      "name": "Văn phòng hiện đại",
+      "asset_ref": "scene_office@1",
+      "keywords": ["văn phòng", "công ty", "phòng họp"]
+    },
+    {
+      "id": "temple",
+      "name": "Điện thờ cũ",
+      "asset_ref": "scene_temple@1",
+      "keywords": ["đền", "điện thờ", "nghi lễ", "siêu nhiên"]
+    },
+    {
+      "id": "lakeside",
+      "name": "Bờ hồ sương mù",
+      "asset_ref": "scene_lakeside@1",
+      "keywords": ["hồ", "bờ sông", "câu cá", "sương mù"]
+    }
+  ],
+  "production": {
+    "scene_mode": "mmd_3d",
+    "action_recipe_library": "recipes_cinematic@1",
+    "default_location_id": "urban_alley"
+  },
   "crowd": {
     "id": "crowd_default",
     "name": "Nhân vật quần chúng",
