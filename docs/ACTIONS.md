@@ -1,7 +1,7 @@
 # Semantic action system
 
 Storyboards may use `action` instead of the older `preset` field. The action
-catalog contains 305 keys across locomotion, poses, gestures, interactions,
+catalog contains 306 keys across locomotion, poses, gestures, interactions,
 dialogue, emotions, thinking, fights, daily activity, motion-comic simulation,
 camera moves, effects, and backward-compatible specialized presets.
 
@@ -33,7 +33,31 @@ python3 scripts/list_actions.py --category fight --format json
 - `with`: second character/object for interaction and fight actions
 - `recoil`: distance applied to the second target after impact
 - `follow` / `focus`: target ID for camera actions
+- `target` / `listener`: character ID for `face_target`
 - `color`, `size`, `text`: optional effect overlay overrides
+
+## Character facing
+
+MMD characters rotate their scene root instead of mirroring the mesh. The
+turn is held by default, so later walking and acting preserve the new heading.
+
+```json
+{
+  "target": "hero",
+  "action": "face_target",
+  "start": 0,
+  "end": 0.45,
+  "params": {"target": "friend", "hold": true}
+}
+```
+
+`turn_left`, `turn_right`, and `turn_around` accept `degrees`, `direction`, and
+`hold`. The episode compiler generates paired `face_target` motions for visible
+dialogue. In scenes with more than two characters, set `speech[].listener` so
+the intended pair is unambiguous.
+
+Subtitles are camera-space overlays. Camera pan, shake, tilt, and zoom therefore
+do not move or resize the text.
 
 ## Motion-comic fight composition
 

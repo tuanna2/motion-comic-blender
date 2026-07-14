@@ -44,6 +44,7 @@
       "speech": [
         {
           "speaker": "char_tran_vu",
+          "listener": "char_minh_khang",
           "text": "Hai người đã nhìn thấy thứ không nên nhìn thấy.",
           "narration": false
         }

@@ -14,7 +14,7 @@ from .action_catalog import motion_action_key, resolve_action
 from .action_recipes import expand_action_recipes
 from .assets import AssetBundle, create_element, create_flat_object, create_text, hex_color
 from .backends import MMDActionBackend, SpriteActionBackend
-from .camera import camera_baseline
+from .camera import camera_baseline, subtitle_screen_y
 from .easing import choose_render_engine
 from .encoding import encode_png_sequence, encode_png_stream
 from .effects import create_action_effect
@@ -253,21 +253,39 @@ def _create_subtitle(
     subtitle: dict[str, Any],
     world_height: float,
     scene_mode: str,
+    camera,
 ):
-    if scene_mode == "sprite_2d":
-        location = (0, float(subtitle.get("y", -world_height * 0.39)), 10)
-    else:
-        location = (0, -6, float(subtitle.get("y", world_height * 0.14)))
+    """Create a camera-space subtitle that is unaffected by pan, shake, or zoom."""
+    # Preserve the old MMD `y` meaning (world Z) while converting it to a
+    # position relative to the vertically centered camera.
+    authored_y = float(subtitle["y"]) if "y" in subtitle else None
+    screen_y = subtitle_screen_y(scene_mode, world_height, authored_y)
+
+    overlay = bpy.data.objects.new(f"{scene_id}.subtitle.{index}.screen", None)
+    bpy.context.scene.collection.objects.link(overlay)
+    overlay.parent = camera
+    overlay.location = (0, 0, -1)
+    for axis in range(3):
+        curve = overlay.driver_add("scale", axis)
+        driver = curve.driver
+        variable = driver.variables.new()
+        variable.name = "camera_scale"
+        variable.type = "SINGLE_PROP"
+        variable.targets[0].id_type = "CAMERA"
+        variable.targets[0].id = camera.data
+        variable.targets[0].data_path = "ortho_scale"
+        driver.expression = f"camera_scale / {world_height:.12g}"
+
     text = create_text(
         f"{scene_id}.subtitle.{index}",
         str(subtitle["text"]),
         color=str(subtitle.get("color", "#ffffff")),
-        location=location,
+        location=(0, 0, 0),
         size=float(subtitle.get("size", 0.48)),
     )
-    if scene_mode == "mmd_3d":
-        text.rotation_euler.x = math.radians(90)
-    return AssetBundle(root=text, renderables=[text])
+    text.parent = overlay
+    text.location = (float(subtitle.get("x", 0)), screen_y, 0)
+    return AssetBundle(root=overlay, renderables=[text])
 
 
 def build_storyboard(
@@ -364,7 +382,14 @@ def build_storyboard(
             if effect is not None:
                 _show_during(effect, effect_start, effect_end)
 
-        for motion in scene_data.get("motions", []):
+        ordered_motions = sorted(
+            enumerate(scene_data.get("motions", [])),
+            key=lambda item: (
+                float(item[1].get("start", 0)),
+                item[0],
+            ),
+        )
+        for _, motion in ordered_motions:
             target = str(motion["target"])
             obj = registry[target]
             action_key = motion_action_key(motion)
@@ -411,7 +436,7 @@ def build_storyboard(
 
         for index, subtitle in enumerate(scene_data.get("subtitles", [])):
             bundle = _create_subtitle(
-                scene_id, index, subtitle, world_height, scene_mode
+                scene_id, index, subtitle, world_height, scene_mode, camera
             )
             subtitle_start = scene_start + round(float(subtitle.get("start", 0)) * fps)
             subtitle_end = scene_start + round(float(subtitle.get("end", scene_data["duration"])) * fps)

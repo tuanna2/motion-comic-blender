@@ -25,11 +25,15 @@ def main() -> int:
     args = parser.parse_args()
     try:
         payload = json.loads(Path(args.plan).read_text(encoding="utf-8"))
+        asset_root = Path(args.assets).expanduser().resolve()
         compiled = compile_episode_plan(
             payload,
             load_series(args.series),
-            asset_root=Path(args.assets).expanduser().resolve(),
+            asset_root=asset_root,
         )
+        # Storyboard-relative paths break as soon as --output is outside the
+        # repository root (the documented output/production location does so).
+        compiled.setdefault("settings", {})["asset_library"] = str(asset_root)
         output = Path(args.output).expanduser().resolve()
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(compiled, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

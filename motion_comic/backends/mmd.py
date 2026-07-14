@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ..action_catalog import resolve_action
+from ..facing import FACING_ACTIONS, animate_root_facing
 from ..mmd_actions import apply_mmd_action
 from ..motions import apply_motion
 
@@ -23,7 +24,16 @@ class MMDActionBackend:
     def apply(self, bundle, action, start, end, params, **context) -> None:
         apply_mmd_action(bundle, action, start, end, params, context["asset_registry"])
         category = resolve_action(action).category
-        if category == "comic":
+        if action in FACING_ACTIONS:
+            animate_root_facing(
+                bundle.root,
+                action,
+                start,
+                end,
+                params,
+                registry=context.get("registry", {}),
+            )
+        elif category == "comic":
             apply_motion(
                 action,
                 bundle.root,

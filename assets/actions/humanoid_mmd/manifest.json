@@ -31,6 +31,11 @@
     "talk_happy": {"fallback": "talk"},
     "talk_angry": {"fallback": "talk"},
     "talk_sad": {"fallback": "talk"}
+    ,"turn_left": {"fallback": "idle"}
+    ,"turn_right": {"fallback": "idle"}
+    ,"turn_around": {"fallback": "idle"}
+    ,"face_target": {"fallback": "idle"}
+    ,"body_turn": {"fallback": "idle"}
     ,"approach": {"fallback": "walk"}
     ,"move_away": {"fallback": "walk"}
     ,"step_forward": {"fallback": "walk"}

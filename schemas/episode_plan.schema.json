@@ -16,7 +16,22 @@
           "id": {"type": "string"},
           "location_id": {"type": "string"},
           "characters": {"type": "array"},
-          "speech": {"type": "array"},
+          "speech": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["speaker", "text", "narration"],
+              "properties": {
+                "speaker": {"type": "string", "minLength": 1},
+                "listener": {"type": ["string", "null"]},
+                "text": {"type": "string", "minLength": 1},
+                "narration": {"type": "boolean"},
+                "auto_face": {"type": "boolean"},
+                "turn_duration": {"type": "number", "exclusiveMinimum": 0},
+                "pause_after": {"type": "number", "minimum": 0}
+              }
+            }
+          },
           "visual_beats": {"type": "array"}
         }
       }

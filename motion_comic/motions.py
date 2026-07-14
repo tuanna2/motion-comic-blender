@@ -451,6 +451,17 @@ def locomotion_action(
             obj.location.y = base.y + parabolic_arc(progress, height)
             _keyframe(obj, "location", frame)
         return
+    if action_key == "face_target":
+        destination_id = params.get("target") or params.get("with") or params.get("listener")
+        destination = registry.get(str(destination_id)) if destination_id is not None else None
+        if destination is None:
+            raise ValueError(f"face_target cannot resolve target {destination_id!r}")
+        base = obj.scale.copy()
+        magnitude = abs(float(base.x))
+        obj.scale.x = magnitude if destination.location.x >= obj.location.x else -magnitude
+        _keyframe(obj, "scale", start)
+        _keyframe(obj, "scale", end)
+        return
     if action_key in {"turn_left", "turn_right", "turn_around"}:
         base = obj.scale.copy()
         middle = round((start + end) / 2)

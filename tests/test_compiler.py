@@ -59,11 +59,26 @@ class CompilerTests(unittest.TestCase):
         self.assertEqual(scene["elements"][0]["slot"], "auto")
         self.assertEqual(scene["subtitles"][1]["voice"], "vi-VN-HoaiMyNeural")
         self.assertTrue(scene["subtitles"][1]["lip_sync"])
+        facing = [item for item in scene["motions"] if item["action"] == "face_target"]
+        self.assertEqual(len(facing), 2)
+        self.assertEqual(
+            {(item["target"], item["params"]["target"]) for item in facing},
+            {
+                ("char_minh_khang", "char_an_nhien"),
+                ("char_an_nhien", "char_minh_khang"),
+            },
+        )
 
     def test_rejects_unknown_location(self):
         plan = self.plan()
         plan["scenes"][0]["location_id"] = "moon"
         with self.assertRaisesRegex(EpisodeCompileError, "unknown location_id"):
+            compile_episode_plan(plan, self.series, asset_root=ROOT / "assets")
+
+    def test_rejects_dialogue_listener_not_visible_in_scene(self):
+        plan = self.plan()
+        plan["scenes"][0]["speech"][1]["listener"] = "char_tran_vu"
+        with self.assertRaisesRegex(EpisodeCompileError, "dialogue listener"):
             compile_episode_plan(plan, self.series, asset_root=ROOT / "assets")
 
 

@@ -82,7 +82,11 @@ This first stage creates source fiction. The second AI prompt returns scenes,
 locations, attributed speech and visual beats. `motion_comic.compiler` then
 adds the registered MMD asset refs, Edge-TTS profiles, scene templates,
 auto-layout, estimated speech timing, camera defaults and expanded action
-recipes. Edge-TTS remains the authority for the actual audio and lip-sync.
+recipes. Visible dialogue also generates paired `face_target` motions; add a
+`listener` to a speech line when more than two characters are present. Edge-TTS
+remains the authority for the actual audio and lip-sync. Subtitles are attached
+to a camera-space overlay with zoom compensation, so camera movement never
+changes their screen position or size.
 
 Five reusable spaces ship with the series: `urban_alley`, `apartment`,
 `office`, `temple`, and `lakeside`. They render floor, horizon, back wall,

@@ -7,9 +7,6 @@ requires-python = ">=3.11"
 [project.optional-dependencies]
 tts = ["edge-tts>=7.2.8,<8"]
 
-[tool.setuptools]
-packages = ["motion_comic"]
-
 [tool.ruff]
 line-length = 100
 

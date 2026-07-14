@@ -18,7 +18,7 @@ animations. Transparent PNG assets are supported for replacing the placeholders 
 - Reusable scene templates with named slots and automatic collision-safe placement
 - Scene anchors for water/ground positions and prop attachment to character anchors
 - Procedural fishing character and fish for a zero-asset demo
-- Semantic catalog with 305 character, interaction, fight, camera, and effect actions
+- Semantic catalog with 306 character, interaction, fight, camera, and effect actions
 - Backward-compatible specialized presets such as `pull_rod` and `fish_jump`
 - Timed subtitles
 - Cached Edge-TTS voice generation and WordBoundary-driven mouth animation
@@ -341,7 +341,7 @@ line and only that line is synthesized again.
 
 ## Semantic action catalog
 
-Stage 5 accepts every action key through the readable `action` field. The 305
+Stage 5 accepts every action key through the readable `action` field. The 306
 registered keys cover movement, body poses, two-hand gestures, interactions,
 dialogue acting, four emotion groups, thinking, fights, daily activity,
 motion-comic simulation, cameras, effects, and the legacy presets.
@@ -499,7 +499,7 @@ motion_comic/              Blender/Python engine
   assets.py                PNG and procedural object factories
   builder.py               Timeline and render builder
   motions.py               Reusable animation presets
-  action_catalog.py        305 semantic action registrations
+  action_catalog.py        306 semantic action registrations
   effects.py               Procedural symbols, flashes, and auras
   rig.py                   Rig hierarchy validation and ordering
   batch.py                 Batch validation and command planning

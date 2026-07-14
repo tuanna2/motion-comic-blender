@@ -86,6 +86,7 @@ def build_storyboard_creation_prompt(
                         "speaker": story_source["narrator_character_id"],
                         "text": "Nguyên văn phần dẫn chuyện hoặc thoại.",
                         "narration": True,
+                        "listener": None,
                         "pause_after": 0.2,
                     }
                 ],
@@ -121,9 +122,10 @@ Convert the complete Vietnamese story into one compact episode-plan JSON object.
 4. Use only character IDs, location IDs, action keys, and recipe keys listed below.
 5. speech speaker must be a listed character ID, crowd_default, or narrator.
 6. narration=true for narration/thoughts and false for visible dialogue.
-7. visual_beats actor may be a character ID or camera. A beat uses either action or recipe.
-8. For a two-person recipe, set actor and target. Times are relative to that scene.
-9. Keep visual beats sparse and meaningful; the compiler adds idle and static camera automatically.
+7. For visible dialogue, set speech[].listener to the character being addressed when a scene has more than two visible characters. The compiler automatically turns speaker and listener toward one another. Omit listener for narration or unambiguous two-person scenes.
+8. visual_beats actor may be a character ID or camera. A beat uses either action or recipe.
+9. For a two-person recipe, set actor and target. Times are relative to that scene.
+10. Keep visual beats sparse and meaningful; the compiler adds idle, dialogue facing, and static camera automatically.
 
 # CHARACTERS
 {json.dumps(production_characters, ensure_ascii=False, indent=2)}

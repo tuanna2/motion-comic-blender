@@ -77,6 +77,67 @@ def _normalize_character_ids(scene: dict[str, Any], series: SeriesRegistry) -> l
     return ids
 
 
+def _dialogue_facing_motions(
+    raw_scene: dict[str, Any],
+    subtitles: list[dict[str, Any]],
+    character_ids: list[str],
+) -> list[dict[str, Any]]:
+    """Make visible dialogue partners face one another without AI-authored keyframes."""
+    if raw_scene.get("auto_face_dialogue", True) is False:
+        return []
+
+    motions: list[dict[str, Any]] = []
+    facing: dict[str, str] = {}
+    previous_speaker: str | None = None
+    speech = raw_scene.get("speech", [])
+    for line, subtitle in zip(speech, subtitles):
+        speaker = str(line.get("speaker", ""))
+        if (
+            bool(line.get("narration", False))
+            or line.get("auto_face", True) is False
+            or speaker not in character_ids
+        ):
+            continue
+
+        explicit = line.get("listener") or line.get("target")
+        if explicit is not None:
+            listener = str(explicit)
+            if listener == speaker or listener not in character_ids:
+                raise EpisodeCompileError(
+                    f"scene {raw_scene.get('id')!r}: dialogue listener {listener!r} "
+                    f"must be another visible character"
+                )
+        elif previous_speaker is not None and previous_speaker != speaker:
+            listener = previous_speaker
+        else:
+            listener = next((item for item in character_ids if item != speaker), "")
+
+        if not listener:
+            previous_speaker = speaker
+            continue
+
+        start = max(0.0, float(subtitle["start"]) - 0.18)
+        available = max(0.01, float(subtitle["end"]) - start)
+        turn_duration = min(available, max(0.05, float(line.get("turn_duration", 0.45))))
+        end = start + turn_duration
+        for actor, target in ((speaker, listener), (listener, speaker)):
+            if facing.get(actor) == target:
+                continue
+            motions.append(
+                {
+                    "target": actor,
+                    "action": "face_target",
+                    "start": round(start, 4),
+                    "end": round(end, 4),
+                    "params": {"target": target, "hold": True},
+                    "generated": "dialogue_facing",
+                }
+            )
+            facing[actor] = target
+        previous_speaker = speaker
+    return motions
+
+
 def _compile_plan_scene(
     raw: dict[str, Any],
     index: int,
@@ -92,7 +153,8 @@ def _compile_plan_scene(
             f"scene {scene_id!r}: unknown location_id {location_id!r}; known: {known}"
         )
     location = locations[location_id]
-    elements = [_character_element(series, item) for item in _normalize_character_ids(raw, series)]
+    character_ids = _normalize_character_ids(raw, series)
+    elements = [_character_element(series, item) for item in character_ids]
 
     subtitles: list[dict[str, Any]] = []
     cursor = 0.0
@@ -122,7 +184,9 @@ def _compile_plan_scene(
             {"id": str(series.data["narrator"]["id"]), "kind": "text", "text": "", "x": 100, "y": 100, "z": -100, "size": 0.01}
         )
 
-    motions: list[dict[str, Any]] = []
+    motions: list[dict[str, Any]] = _dialogue_facing_motions(
+        raw, subtitles, character_ids
+    )
     recipes: list[dict[str, Any]] = []
     max_visual_end = 0.0
     for beat in raw.get("visual_beats", []):
