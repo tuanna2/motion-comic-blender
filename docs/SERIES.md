@@ -1,9 +1,10 @@
 # Series registry and AI story creation
 
 `series/urban_mystery/series.json` defines the first fixed cast for the series
-**Ký Ức Sau Nửa Đêm**. Character assets are marked `planned`: the identity,
-palette, voice, and writing constraints are stable, but production PNG layers
-still need to be drawn or generated later.
+**Ký Ức Sau Nửa Đêm**. Each character now resolves to a versioned MMD
+manifest. The starter manifests reuse the compiled learning model with
+different tint/scale values; final production PMX files can replace them
+independently without changing IDs.
 
 | ID | Character | Function | Primary color | Edge-TTS profile |
 |---|---|---|---|---|
@@ -32,7 +33,10 @@ Open `http://127.0.0.1:8765`. The UI can:
 - generate and copy a complete AI prompt;
 - paste the AI JSON result;
 - validate IDs, narration mode, duration, and story length;
-- download a valid `story_source.json`.
+- download a valid `story_source.json`;
+- create a second prompt for a compact `episode_plan.json`;
+- compile the plan into a complete MMD storyboard;
+- monitor frame progress and live logs, cancel, and resume render jobs.
 
 The server binds to localhost by default and uses only the Python standard
 library.
@@ -74,6 +78,21 @@ The AI returns one JSON object containing the complete TTS-ready story:
 }
 ```
 
-This stage creates source fiction, not timestamps or a final storyboard. The
-next compiler will split `full_story_text` into attributed utterances, create
-TTS, and derive the exact visual timeline.
+This first stage creates source fiction. The second AI prompt returns scenes,
+locations, attributed speech and visual beats. `motion_comic.compiler` then
+adds the registered MMD asset refs, Edge-TTS profiles, scene templates,
+auto-layout, estimated speech timing, camera defaults and expanded action
+recipes. Visible dialogue also generates paired `face_target` motions; add a
+`listener` to a speech line when more than two characters are present. Edge-TTS
+remains the authority for the actual audio and lip-sync. Subtitles are attached
+to a camera-space overlay with zoom compensation, so camera movement never
+changes their screen position or size.
+
+Five reusable spaces ship with the series: `urban_alley`, `apartment`,
+`office`, `temple`, and `lakeside`. They render floor, horizon, back wall,
+accent geometry and MMD lighting instead of a single background color.
+
+```bash
+python3 scripts/compile_episode.py examples/production/episode_plan.json \
+  --output output/production/storyboard.json
+```

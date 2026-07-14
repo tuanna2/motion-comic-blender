@@ -64,6 +64,12 @@ The repository now includes a small redistributable sample VMD set under
 `assets/actions/humanoid_mmd/source/`. Its provenance and exact filename mapping are recorded in
 `assets/actions/humanoid_mmd/SOURCE.md`. A PMX reference model is still not bundled.
 
+The five series manifests under
+`assets/characters/{minh_khang,an_nhien,tran_vu,ba_hanh,le_huyen}` currently point at the same
+compiled learning model. Runtime material copies apply a stable tint per identity. Replace each
+manifest's source/blend later when five separately licensed character models are ready;
+storyboards continue using the same `char_*@1` references.
+
 ## 3. Compile once
 
 ```bash

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from .registry import AssetManifest, AssetRegistry
+from .cache import cached_artifact
 
 if TYPE_CHECKING:
     from .assets import AssetBundle
@@ -78,7 +79,8 @@ def _load_blender_action(manifest: AssetManifest, action_name: str):
     blend_path = (manifest.directory / str(manifest.data["blend"])).resolve()
     if not blend_path.is_file():
         raise MMDActionError(f"compiled action blend not found: {blend_path}")
-    with bpy.data.libraries.load(str(blend_path), link=False) as (source, target):
+    runtime_blend = cached_artifact(blend_path)
+    with bpy.data.libraries.load(str(runtime_blend), link=False) as (source, target):
         if action_name not in source.actions:
             available = ", ".join(source.actions) or "none"
             raise MMDActionError(

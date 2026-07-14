@@ -17,7 +17,8 @@ CATEGORY_KEYS: dict[str, tuple[str, ...]] = {
     "locomotion": (
         "idle", "walk", "walk_slow", "walk_fast", "run", "sprint", "sneak",
         "tiptoe", "crawl", "climb", "jump", "jump_back", "step_forward", "step_back",
-        "turn_left", "turn_right", "turn_around", "enter_scene", "exit_scene", "approach",
+        "turn_left", "turn_right", "turn_around", "face_target", "enter_scene", "exit_scene",
+        "approach",
         "move_away", "stop_suddenly", "stumble", "fall_down", "get_up",
     ),
     "pose": (

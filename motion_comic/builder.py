@@ -11,9 +11,10 @@ from typing import Any
 import bpy
 
 from .action_catalog import motion_action_key, resolve_action
+from .action_recipes import expand_action_recipes
 from .assets import AssetBundle, create_element, create_flat_object, create_text, hex_color
 from .backends import MMDActionBackend, SpriteActionBackend
-from .camera import camera_baseline
+from .camera import camera_baseline, subtitle_screen_y
 from .easing import choose_render_engine
 from .encoding import encode_png_sequence, encode_png_stream
 from .effects import create_action_effect
@@ -22,6 +23,7 @@ from .lipsync import LipCue, cue_frame_range, load_lip_sync
 from .motions import apply_motion
 from .registry import AssetRegistry
 from .schema import Storyboard, load_storyboard
+from .spaces import create_scene_space
 
 
 def reset_blender() -> None:
@@ -221,7 +223,18 @@ def _scene_background(
     world_width: float,
     world_height: float,
     scene_mode: str,
+    template=None,
 ):
+    if template is not None:
+        environment = template.data.get("environment")
+        if isinstance(environment, dict):
+            return create_scene_space(
+                scene_id,
+                environment,
+                world_width=world_width,
+                world_height=world_height,
+                scene_mode=scene_mode,
+            )
     color = str(scene_data.get("background_color", "#7dd3fc"))
     obj = create_flat_object(
         f"{scene_id}.background",
@@ -240,21 +253,39 @@ def _create_subtitle(
     subtitle: dict[str, Any],
     world_height: float,
     scene_mode: str,
+    camera,
 ):
-    if scene_mode == "sprite_2d":
-        location = (0, float(subtitle.get("y", -world_height * 0.39)), 10)
-    else:
-        location = (0, -6, float(subtitle.get("y", world_height * 0.14)))
+    """Create a camera-space subtitle that is unaffected by pan, shake, or zoom."""
+    # Preserve the old MMD `y` meaning (world Z) while converting it to a
+    # position relative to the vertically centered camera.
+    authored_y = float(subtitle["y"]) if "y" in subtitle else None
+    screen_y = subtitle_screen_y(scene_mode, world_height, authored_y)
+
+    overlay = bpy.data.objects.new(f"{scene_id}.subtitle.{index}.screen", None)
+    bpy.context.scene.collection.objects.link(overlay)
+    overlay.parent = camera
+    overlay.location = (0, 0, -1)
+    for axis in range(3):
+        curve = overlay.driver_add("scale", axis)
+        driver = curve.driver
+        variable = driver.variables.new()
+        variable.name = "camera_scale"
+        variable.type = "SINGLE_PROP"
+        variable.targets[0].id_type = "CAMERA"
+        variable.targets[0].id = camera.data
+        variable.targets[0].data_path = "ortho_scale"
+        driver.expression = f"camera_scale / {world_height:.12g}"
+
     text = create_text(
         f"{scene_id}.subtitle.{index}",
         str(subtitle["text"]),
         color=str(subtitle.get("color", "#ffffff")),
-        location=location,
+        location=(0, 0, 0),
         size=float(subtitle.get("size", 0.48)),
     )
-    if scene_mode == "mmd_3d":
-        text.rotation_euler.x = math.radians(90)
-    return AssetBundle(root=text, renderables=[text])
+    text.parent = overlay
+    text.location = (float(subtitle.get("x", 0)), screen_y, 0)
+    return AssetBundle(root=overlay, renderables=[text])
 
 
 def build_storyboard(
@@ -283,7 +314,14 @@ def build_storyboard(
         library_path = (storyboard_dir / storyboard.settings.asset_library).resolve()
         asset_registry = AssetRegistry(library_path).scan()
 
-    for scene_data in storyboard.scenes:
+    for raw_scene_data in storyboard.scenes:
+        scene_data = raw_scene_data
+        if asset_registry is not None and raw_scene_data.get("recipes"):
+            scene_data = expand_action_recipes(
+                raw_scene_data,
+                asset_registry,
+                storyboard.settings.action_recipes,
+            )
         scene_id = str(scene_data["id"])
         duration_frames = round(float(scene_data["duration"]) * fps)
         scene_start = current_frame
@@ -301,7 +339,7 @@ def build_storyboard(
         resolved_elements = resolve_scene_elements(scene_data.get("elements", []), template)
 
         background = _scene_background(
-            scene_id, scene_data, world_width, world_height, scene_mode
+            scene_id, scene_data, world_width, world_height, scene_mode, template
         )
         _show_during(background, scene_start, scene_end)
 
@@ -344,12 +382,21 @@ def build_storyboard(
             if effect is not None:
                 _show_during(effect, effect_start, effect_end)
 
-        for motion in scene_data.get("motions", []):
+        ordered_motions = sorted(
+            enumerate(scene_data.get("motions", [])),
+            key=lambda item: (
+                float(item[1].get("start", 0)),
+                item[0],
+            ),
+        )
+        for _, motion in ordered_motions:
             target = str(motion["target"])
             obj = registry[target]
             action_key = motion_action_key(motion)
             if action_key is None:
                 raise ValueError(f"motion for {target!r} is missing action")
+            if resolve_action(action_key).category == "effect":
+                continue
             start = scene_start + round(float(motion.get("start", 0)) * fps)
             end = scene_start + round(float(motion.get("end", scene_data["duration"])) * fps)
             end = min(scene_end, end)
@@ -389,7 +436,7 @@ def build_storyboard(
 
         for index, subtitle in enumerate(scene_data.get("subtitles", [])):
             bundle = _create_subtitle(
-                scene_id, index, subtitle, world_height, scene_mode
+                scene_id, index, subtitle, world_height, scene_mode, camera
             )
             subtitle_start = scene_start + round(float(subtitle.get("start", 0)) * fps)
             subtitle_end = scene_start + round(float(subtitle.get("end", scene_data["duration"])) * fps)

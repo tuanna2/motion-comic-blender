@@ -31,5 +31,34 @@
     "talk_happy": {"fallback": "talk"},
     "talk_angry": {"fallback": "talk"},
     "talk_sad": {"fallback": "talk"}
+    ,"turn_left": {"fallback": "idle"}
+    ,"turn_right": {"fallback": "idle"}
+    ,"turn_around": {"fallback": "idle"}
+    ,"face_target": {"fallback": "idle"}
+    ,"body_turn": {"fallback": "idle"}
+    ,"approach": {"fallback": "walk"}
+    ,"move_away": {"fallback": "walk"}
+    ,"step_forward": {"fallback": "walk"}
+    ,"step_back": {"fallback": "walk"}
+    ,"chase": {"fallback": "run"}
+    ,"escape": {"fallback": "run"}
+    ,"run_away_scared": {"fallback": "run"}
+    ,"walk_away_sad": {"fallback": "walk"}
+    ,"punch": {"fallback": "swing_weapon"}
+    ,"kick": {"fallback": "swing_weapon"}
+    ,"slap": {"fallback": "swing_weapon"}
+    ,"point_angrily": {"fallback": "point"}
+    ,"recoil": {"fallback": "fall_down"}
+    ,"knock_down": {"fallback": "fall_down"}
+    ,"collapse": {"fallback": "fall_down"}
+    ,"comfort": {"fallback": "idle"}
+    ,"surprised": {"fallback": "idle"}
+    ,"angry": {"fallback": "idle"}
+    ,"sad": {"fallback": "idle"}
+    ,"reaction_pop": {"fallback": "idle"}
+    ,"sad_sink": {"fallback": "idle"}
+    ,"impact_shake": {"fallback": "idle"}
+    ,"anger_shake": {"fallback": "idle"}
+    ,"fear_shake": {"fallback": "idle"}
   }
 }

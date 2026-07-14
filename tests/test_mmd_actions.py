@@ -7,6 +7,9 @@ from motion_comic.mmd_actions import MMDActionError, resolve_mmd_action
 from motion_comic.registry import AssetRegistry
 
 
+ROOT = Path(__file__).resolve().parents[1]
+
+
 class MMDActionsTests(unittest.TestCase):
     def manifest(self, data):
         directory = tempfile.TemporaryDirectory()
@@ -60,6 +63,13 @@ class MMDActionsTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(MMDActionError, "cyclic"):
             resolve_mmd_action(manifest, "a")
+
+    def test_production_facing_actions_use_idle_armature_under_root_turn(self):
+        registry = AssetRegistry(ROOT / "assets").scan()
+        manifest = registry.resolve("actions_humanoid_mmd@1", "action_library")
+        for action in ("turn_left", "turn_right", "turn_around", "face_target", "body_turn"):
+            with self.subTest(action=action):
+                self.assertEqual(resolve_mmd_action(manifest, action).blender_action, "MMD_Idle")
 
 
 if __name__ == "__main__":

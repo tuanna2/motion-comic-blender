@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0",
+  "id": "recipes_cinematic",
+  "version": 1,
+  "type": "action_recipe_library",
+  "recipes": {
+    "dramatic_reveal": {
+      "duration": 2.5,
+      "steps": [
+        {"target": "$actor", "action": "reaction_pop", "start": 0.0, "end": 0.35, "params": {}},
+        {"target": "$actor", "action": "surprised", "start": 0.25, "end": 1.0, "params": {}},
+        {"target": "camera", "action": "camera_push_in", "start": 0.0, "end": 1.0, "params": {}}
+      ]
+    },
+    "heated_argument": {
+      "duration": 4.0,
+      "steps": [
+        {"target": "$actor", "action": "talk_angry", "start": 0.0, "end": 0.7, "params": {}},
+        {"target": "$actor", "action": "point_angrily", "start": 0.25, "end": 0.75, "params": {}},
+        {"target": "$target", "action": "step_back", "start": 0.55, "end": 0.9, "params": {}},
+        {"target": "camera", "action": "camera_handheld", "start": 0.0, "end": 1.0, "params": {}}
+      ]
+    },
+    "punch_impact": {
+      "duration": 1.2,
+      "steps": [
+        {"target": "$actor", "action": "punch", "start": 0.0, "end": 0.55, "params": {}},
+        {"target": "$target", "action": "recoil", "start": 0.42, "end": 0.88, "params": {}},
+        {"target": "$target", "action": "impact_flash", "start": 0.4, "end": 0.52, "params": {"frames": 3}},
+        {"target": "camera", "action": "camera_shake", "start": 0.38, "end": 0.7, "params": {}}
+      ]
+    },
+    "chase_escape": {
+      "duration": 5.0,
+      "steps": [
+        {"target": "$actor", "action": "chase", "start": 0.0, "end": 1.0, "params": {"distance": 4}},
+        {"target": "$target", "action": "escape", "start": 0.0, "end": 1.0, "params": {"distance": 5}},
+        {"target": "camera", "action": "camera_follow", "start": 0.0, "end": 1.0, "params": {}}
+      ]
+    },
+    "comfort_moment": {
+      "duration": 3.5,
+      "steps": [
+        {"target": "$actor", "action": "approach", "start": 0.0, "end": 0.4, "params": {}},
+        {"target": "$actor", "action": "comfort", "start": 0.3, "end": 1.0, "params": {}},
+        {"target": "$target", "action": "sad_sink", "start": 0.0, "end": 0.65, "params": {}},
+        {"target": "camera", "action": "camera_zoom_in", "start": 0.35, "end": 1.0, "params": {}}
+      ]
+    }
+  }
+}

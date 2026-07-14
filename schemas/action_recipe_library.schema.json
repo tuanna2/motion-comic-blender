@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Motion Comic Action Recipe Library",
+  "type": "object",
+  "required": ["id", "version", "type", "recipes"],
+  "properties": {
+    "id": {"type": "string"},
+    "version": {"type": "integer", "minimum": 1},
+    "type": {"const": "action_recipe_library"},
+    "recipes": {"type": "object", "minProperties": 1}
+  }
+}

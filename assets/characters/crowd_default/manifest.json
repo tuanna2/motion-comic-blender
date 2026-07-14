@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "id": "char_crowd_default",
+  "version": 1,
+  "type": "mmd_character",
+  "source": "../mmd_demo/source/character.pmd",
+  "blend": "../mmd_demo/compiled/character.blend",
+  "collection": "CHARACTER",
+  "root_object": "MMD_Root",
+  "armature": "MMD_Armature",
+  "scale": 0.94,
+  "disable_physics": true,
+  "material_tint": "#64748b",
+  "material_tint_strength": 0.42,
+  "morphs": {
+    "normal": null,
+    "happy": "笑い",
+    "angry": "怒り",
+    "sad": "困る",
+    "surprised": "びっくり",
+    "mouth_open": "あ"
+  },
+  "action_set": "actions_humanoid_mmd@1"
+}

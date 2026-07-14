@@ -91,7 +91,7 @@ class StoryboardAITests(unittest.TestCase):
         self.assertEqual(result.scene_count, 1)
         self.assertEqual(result.subtitle_count, 1)
 
-    def test_can_replace_missing_character_asset_for_preview(self):
+    def test_keeps_registered_mmd_character_asset_for_preview(self):
         storyboard = self.storyboard()
         storyboard["scenes"][0]["elements"][0] = {
             "id": "char_minh_khang",
@@ -108,9 +108,9 @@ class StoryboardAITests(unittest.TestCase):
         )
         self.assertEqual(
             prepared["scenes"][0]["elements"][0]["asset_ref"],
-            "char_angler@1",
+            "char_minh_khang@1",
         )
-        self.assertTrue(warnings)
+        self.assertFalse(warnings)
 
 
 if __name__ == "__main__":

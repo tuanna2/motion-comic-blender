@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from .action_catalog import ACTION_CATALOG
+from .compiler import compile_episode_plan
 from .registry import AssetRegistry, AssetRegistryError
 from .schema import StoryboardError, load_storyboard
 from .series import SeriesRegistry, validate_story_source
@@ -52,6 +53,98 @@ def build_storyboard_creation_prompt(
     source_validation = validate_story_source(story_source, series)
     if not source_validation.valid:
         raise ValueError("invalid story source: " + "; ".join(source_validation.errors))
+
+    production_characters = [
+        {
+            "id": character_id,
+            "name": character["name"],
+            "asset_ref": character["visual"].get(
+                "asset_ref", f"{character['visual']['asset_id']}@1"
+            ),
+            "preferred_actions": character.get("preferred_actions", []),
+        }
+        for character_id, character in series.characters.items()
+    ]
+    locations = [
+        {
+            "location_id": item["id"],
+            "name": item["name"],
+            "keywords": item.get("keywords", []),
+        }
+        for item in series.data.get("locations", [])
+    ]
+    compact_shape = {
+        "version": "1.0",
+        "title": story_source["title"],
+        "scenes": [
+            {
+                "id": "beat_0001",
+                "location_id": "urban_alley",
+                "characters": [story_source["characters_used"][0]],
+                "speech": [
+                    {
+                        "speaker": story_source["narrator_character_id"],
+                        "text": "Nguyên văn phần dẫn chuyện hoặc thoại.",
+                        "narration": True,
+                        "listener": None,
+                        "pause_after": 0.2,
+                    }
+                ],
+                "visual_beats": [
+                    {
+                        "actor": story_source["characters_used"][0],
+                        "action": "look_around",
+                        "start": 0,
+                        "duration": 2.0,
+                        "params": {},
+                    },
+                    {
+                        "actor": story_source["characters_used"][0],
+                        "recipe": "dramatic_reveal",
+                        "start": 2.0,
+                        "duration": 2.5,
+                        "params": {},
+                    },
+                ],
+            }
+        ],
+    }
+    return f"""# ROLE
+You are a visual-beat planner for a deterministic Blender MMD motion-comic compiler.
+
+# TASK
+Convert the complete Vietnamese story into one compact episode-plan JSON object. The local compiler—not you—will assign MMD assets, voices, slots, camera defaults, scene geometry, and exact fallback motions.
+
+# NON-NEGOTIABLE RULES
+1. Return exactly one JSON object, no Markdown.
+2. Preserve every spoken/narrated sentence in chronological order inside scenes[].speech[].text. Do not summarize.
+3. Split on location, active cast, or visible beat changes. Prefer 4-15 seconds of spoken content per scene.
+4. Use only character IDs, location IDs, action keys, and recipe keys listed below.
+5. speech speaker must be a listed character ID, crowd_default, or narrator.
+6. narration=true for narration/thoughts and false for visible dialogue.
+7. For visible dialogue, set speech[].listener to the character being addressed when a scene has more than two visible characters. The compiler automatically turns speaker and listener toward one another. Omit listener for narration or unambiguous two-person scenes.
+8. visual_beats actor may be a character ID or camera. A beat uses either action or recipe.
+9. For a two-person recipe, set actor and target. Times are relative to that scene.
+10. Keep visual beats sparse and meaningful; the compiler adds idle, dialogue facing, and static camera automatically.
+
+# CHARACTERS
+{json.dumps(production_characters, ensure_ascii=False, indent=2)}
+
+# LOCATIONS
+{json.dumps(locations, ensure_ascii=False, indent=2)}
+
+# ACTION RECIPES
+dramatic_reveal, heated_argument, punch_impact, chase_escape, comfort_moment
+
+# ALLOWED_ACTIONS
+{', '.join(sorted(ACTION_CATALOG))}
+
+# OUTPUT SHAPE
+{json.dumps(compact_shape, ensure_ascii=False, indent=2)}
+
+# COMPLETE STORY SOURCE
+{json.dumps(story_source, ensure_ascii=False, indent=2)}
+"""
 
     characters = []
     for character_id, character in series.characters.items():
@@ -231,9 +324,16 @@ def validate_storyboard_payload(
         try:
             registry = AssetRegistry(asset_root).scan()
             for reference, kind in sorted(asset_refs):
-                expected = "layered_character" if kind == "character" else "sprite_prop"
+                expected = "sprite_prop" if kind == "prop" else None
                 try:
-                    registry.resolve(reference, expected)
+                    manifest = registry.resolve(reference, expected)
+                    if kind == "character" and manifest.asset_type not in {
+                        "layered_character",
+                        "mmd_character",
+                    }:
+                        raise AssetRegistryError(
+                            f"asset_ref {reference!r} is not a character asset"
+                        )
                 except AssetRegistryError as exc:
                     warnings.append(str(exc))
         except AssetRegistryError as exc:
@@ -266,9 +366,16 @@ def prepare_storyboard_for_render(
             if kind not in {"character", "prop"}:
                 continue
             reference = str(element.get("asset_ref", ""))
-            expected = "layered_character" if kind == "character" else "sprite_prop"
+            expected = "sprite_prop" if kind == "prop" else None
             try:
-                registry.resolve(reference, expected)
+                manifest = registry.resolve(reference, expected)
+                if kind == "character" and manifest.asset_type not in {
+                    "layered_character",
+                    "mmd_character",
+                }:
+                    raise AssetRegistryError(
+                        f"asset_ref {reference!r} is not a character asset"
+                    )
             except AssetRegistryError:
                 if placeholder_missing_assets and kind == "character":
                     registry.resolve("char_angler@1", "layered_character")

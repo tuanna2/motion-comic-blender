@@ -44,6 +44,7 @@ class RenderSettings:
     background_color: str = "#111827"
     samples: int = 16
     asset_library: str = "assets"
+    action_recipes: str = "recipes_cinematic@1"
     scene_mode: str = "sprite_2d"
     tts: TTSSettings = field(default_factory=TTSSettings)
 
@@ -233,6 +234,7 @@ def load_storyboard(path: str | Path) -> Storyboard:
         background_color=str(raw_settings.get("background_color", "#111827")),
         samples=int(raw_settings.get("samples", 16)),
         asset_library=str(raw_settings.get("asset_library", "assets")),
+        action_recipes=str(raw_settings.get("action_recipes", "recipes_cinematic@1")),
         scene_mode=str(raw_settings.get("scene_mode", "sprite_2d")),
         tts=tts,
     )

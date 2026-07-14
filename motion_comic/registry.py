@@ -84,6 +84,7 @@ class AssetRegistry:
             "layered_character",
             "mmd_character",
             "action_library",
+            "action_recipe_library",
             "sprite_prop",
             "scene_template",
         }:
@@ -121,6 +122,17 @@ class AssetRegistry:
                 if not has_action and not has_fallback:
                     raise AssetRegistryError(
                         f"action {action_key!r} needs action or fallback: {path}"
+                    )
+        elif asset_type == "action_recipe_library":
+            recipes = data.get("recipes")
+            if not isinstance(recipes, dict) or not recipes:
+                raise AssetRegistryError(f"action recipe library recipes are required: {path}")
+            for recipe_key, definition in recipes.items():
+                if not isinstance(recipe_key, str) or not recipe_key:
+                    raise AssetRegistryError(f"action recipe keys must be strings: {path}")
+                if not isinstance(definition, dict) or not isinstance(definition.get("steps"), list):
+                    raise AssetRegistryError(
+                        f"action recipe {recipe_key!r} needs a steps array: {path}"
                     )
         elif asset_type == "sprite_prop":
             if not isinstance(data.get("asset"), str) or not data["asset"]:

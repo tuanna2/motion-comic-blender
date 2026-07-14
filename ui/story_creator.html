@@ -39,6 +39,9 @@
     .checks { display:flex; flex-wrap:wrap; gap:16px; margin-top:10px; }
     .checks label { font-weight:500; display:flex; align-items:center; }
     video { width:100%; max-height:620px; margin-top:14px; border-radius:12px; background:#000; display:none; }
+    .progress-track { height:10px; margin-top:12px; border-radius:999px; overflow:hidden; background:#020617; }
+    .progress-bar { width:0; height:100%; background:linear-gradient(90deg,#38bdf8,#34d399); transition:width .25s; }
+    .live-log { display:none; max-height:280px; overflow:auto; white-space:pre-wrap; background:#030712; border:1px solid var(--line); border-radius:10px; padding:12px; color:#cbd5e1; font:12px/1.45 ui-monospace,SFMono-Regular,monospace; }
     @media (max-width:760px) { .grid { grid-template-columns:1fr; } .wide { grid-column:auto; } header { position:static; } }
   </style>
 </head>
@@ -77,19 +80,19 @@
   </section>
 
   <section>
-    <h2>4. Tạo prompt chia storyboard</h2>
-    <div class="step-note">Nút này dùng story source hợp lệ ở bước 3 để tạo prompt bắt AI trả về JSON đúng schema Blender, action catalog và voice từng nhân vật.</div>
-    <div class="actions"><button id="generateStoryboardPrompt" disabled>Tạo prompt storyboard</button><button id="copyStoryboardPrompt" class="secondary" disabled>Copy prompt storyboard</button></div>
+    <h2>4. Tạo prompt chia scene và visual beat</h2>
+    <div class="step-note">AI chỉ trả episode plan gọn. Compiler sẽ tự gắn 5 MMD character, voice, scene space, auto-layout, camera và action recipe.</div>
+    <div class="actions"><button id="generateStoryboardPrompt" disabled>Tạo prompt episode plan</button><button id="copyStoryboardPrompt" class="secondary" disabled>Copy prompt episode plan</button></div>
     <div id="storyboardPromptStatus" class="status"></div>
     <label for="storyboardPrompt" style="margin-top:14px">Prompt storyboard</label>
     <textarea id="storyboardPrompt" class="code" readonly></textarea>
   </section>
 
   <section>
-    <h2>5. Paste và kiểm tra storyboard.json</h2>
-    <label for="storyboardResult">Storyboard JSON AI trả về</label>
-    <textarea id="storyboardResult" class="code" placeholder="Paste JSON có settings và scenes"></textarea>
-    <div class="actions"><button id="validateStoryboard" class="good">Kiểm tra storyboard</button><button id="downloadStoryboard" class="secondary" disabled>Tải storyboard.json</button></div>
+    <h2>5. Paste episode plan và compile</h2>
+    <label for="storyboardResult">Episode plan JSON AI trả về</label>
+    <textarea id="storyboardResult" class="code" placeholder="Paste JSON có scenes, location_id, characters, speech và visual_beats"></textarea>
+    <div class="actions"><button id="validateStoryboard" class="good">Compile và kiểm tra</button><button id="downloadStoryboard" class="secondary" disabled>Tải storyboard đã compile</button></div>
     <div id="storyboardValidationStatus" class="status"></div>
     <p class="hint">Validator kiểm tra scene duration, element, action, subtitle, speaker, độ phủ nội dung truyện và asset còn thiếu.</p>
   </section>
@@ -101,11 +104,13 @@
     </div>
     <div class="checks">
       <label><input id="withTts" type="checkbox" checked>Tạo Edge-TTS và lip sync</label>
-      <label><input id="placeholderAssets" type="checkbox" checked>Dùng char_angler làm placeholder khi thiếu PNG nhân vật</label>
+      <label><input id="placeholderAssets" type="checkbox">Dùng char_angler nếu thiếu asset tùy chỉnh</label>
       <label><input id="keepFrames" type="checkbox">Giữ PNG frames trung gian</label>
     </div>
-    <div class="actions"><button id="startRender" disabled>Render video</button><a id="downloadVideo" class="button-link secondary" style="display:none">Tải MP4</a><a id="downloadBlend" class="button-link secondary" style="display:none">Tải .blend</a><a id="downloadLog" class="button-link secondary" style="display:none">Xem log</a></div>
+    <div class="actions"><button id="startRender" disabled>Render video</button><button id="cancelRender" class="secondary" style="display:none">Cancel</button><button id="resumeRender" class="secondary" style="display:none">Resume</button><a id="downloadVideo" class="button-link secondary" style="display:none">Tải MP4</a><a id="downloadBlend" class="button-link secondary" style="display:none">Tải .blend</a><a id="downloadLog" class="button-link secondary" style="display:none">Tải log</a></div>
     <div id="renderStatus" class="status"></div>
+    <div class="progress-track"><div id="renderProgress" class="progress-bar"></div></div>
+    <pre id="liveLog" class="live-log"></pre>
     <video id="videoPreview" controls></video>
     <p class="hint">Render chạy thành job nền trong tiến trình UI. Kết quả nằm trong output/ui_jobs/&lt;job_id&gt;/.</p>
   </section>
@@ -137,10 +142,14 @@
   $('downloadStoryboard').onclick=()=>validStoryboard&&downloadJson(validStoryboard,'storyboard.json');
 
   function fileUrl(kind){return `/api/render-file?job_id=${encodeURIComponent(activeJob)}&kind=${kind}`;}
-  async function pollRender(){ if(!activeJob)return; try{const response=await fetch(`/api/render-status?job_id=${encodeURIComponent(activeJob)}`); const data=await response.json(); if(!response.ok)throw new Error(data.error); const lines=[`Job: ${data.job_id}`,`Trạng thái: ${data.status}`,`Bước: ${data.stage}`,data.progress_message]; if(data.warnings.length)lines.push(`Cảnh báo:\n- ${data.warnings.join('\n- ')}`); if(data.error)lines.push(`Lỗi: ${data.error}`); showStatus($('renderStatus'),lines.join('\n'),data.status==='failed'?'bad':data.status==='completed'?'good':'info'); if(data.log_ready){$('downloadLog').href=fileUrl('log');$('downloadLog').style.display='inline-block';} if(data.status==='completed'){clearInterval(pollTimer); $('startRender').disabled=false; $('downloadVideo').href=fileUrl('video');$('downloadVideo').download='episode.mp4';$('downloadVideo').style.display='inline-block'; if(data.blend_ready){$('downloadBlend').href=fileUrl('blend');$('downloadBlend').download='episode.blend';$('downloadBlend').style.display='inline-block';} const video=$('videoPreview');video.src=fileUrl('video');video.style.display='block';} else if(data.status==='failed'){clearInterval(pollTimer);$('startRender').disabled=false;}}catch(e){showStatus($('renderStatus'),e.message,'bad');}}
-  $('startRender').onclick=async()=>{ if(!validStoryboard)return; $('startRender').disabled=true; $('downloadVideo').style.display='none';$('downloadBlend').style.display='none';$('downloadLog').style.display='none';$('videoPreview').style.display='none'; try{const data=await post('/api/render',{storyboard:validStoryboard,story_source:validStory,with_tts:$('withTts').checked,placeholder_missing_assets:$('placeholderAssets').checked,keep_frames:$('keepFrames').checked,blender_bin:$('blenderBin').value}); activeJob=data.job_id; showStatus($('renderStatus'),`Đã tạo job ${activeJob}.`,'info'); clearInterval(pollTimer);pollTimer=setInterval(pollRender,2000);pollRender();}catch(e){$('startRender').disabled=false;showStatus($('renderStatus'),e.message,'bad');}};
+  async function pollRender(){ if(!activeJob)return; try{const response=await fetch(`/api/render-status?job_id=${encodeURIComponent(activeJob)}`); const data=await response.json(); if(!response.ok)throw new Error(data.error); const lines=[`Job: ${data.job_id}`,`Trạng thái: ${data.status}`,`Bước: ${data.stage}`,`Tiến độ: ${data.progress_percent}%${data.total_frames?` · frame ${data.current_frame}/${data.total_frames}`:''}`,data.progress_message]; if(data.warnings.length)lines.push(`Cảnh báo:\n- ${data.warnings.join('\n- ')}`); if(data.error)lines.push(`Lỗi: ${data.error}`); showStatus($('renderStatus'),lines.join('\n'),data.status==='failed'?'bad':data.status==='completed'?'good':'info'); $('renderProgress').style.width=`${data.progress_percent}%`; $('cancelRender').style.display=data.can_cancel?'inline-block':'none'; $('resumeRender').style.display=data.can_resume?'inline-block':'none'; if(data.log_tail){$('liveLog').textContent=data.log_tail;$('liveLog').style.display='block';$('liveLog').scrollTop=$('liveLog').scrollHeight;} if(data.log_ready){$('downloadLog').href=fileUrl('log');$('downloadLog').style.display='inline-block';} if(data.status==='completed'){clearInterval(pollTimer); $('startRender').disabled=false; $('downloadVideo').href=fileUrl('video');$('downloadVideo').download='episode.mp4';$('downloadVideo').style.display='inline-block'; if(data.blend_ready){$('downloadBlend').href=fileUrl('blend');$('downloadBlend').download='episode.blend';$('downloadBlend').style.display='inline-block';} const video=$('videoPreview');video.src=fileUrl('video');video.style.display='block';} else if(['failed','cancelled','interrupted'].includes(data.status)){clearInterval(pollTimer);$('startRender').disabled=false;}}catch(e){showStatus($('renderStatus'),e.message,'bad');}}
+  function startPolling(){clearInterval(pollTimer);pollTimer=setInterval(pollRender,1000);pollRender();}
+  $('startRender').onclick=async()=>{ if(!validStoryboard)return; $('startRender').disabled=true; $('downloadVideo').style.display='none';$('downloadBlend').style.display='none';$('downloadLog').style.display='none';$('videoPreview').style.display='none';$('liveLog').style.display='none';$('renderProgress').style.width='0%'; try{const data=await post('/api/render',{storyboard:validStoryboard,story_source:validStory,with_tts:$('withTts').checked,placeholder_missing_assets:$('placeholderAssets').checked,keep_frames:$('keepFrames').checked,blender_bin:$('blenderBin').value}); activeJob=data.job_id; showStatus($('renderStatus'),`Đã tạo job ${activeJob}.`,'info');startPolling();}catch(e){$('startRender').disabled=false;showStatus($('renderStatus'),e.message,'bad');}};
+  $('cancelRender').onclick=async()=>{try{await post('/api/render-cancel',{job_id:activeJob});startPolling();}catch(e){showStatus($('renderStatus'),e.message,'bad');}};
+  $('resumeRender').onclick=async()=>{try{await post('/api/render-resume',{job_id:activeJob});$('startRender').disabled=true;startPolling();}catch(e){showStatus($('renderStatus'),e.message,'bad');}};
+  async function restoreJobs(){const response=await fetch('/api/render-jobs');const data=await response.json();const job=data.jobs&&data.jobs[0];if(job&&['running','queued','cancelling','failed','cancelled','interrupted'].includes(job.status)){activeJob=job.job_id;startPolling();}}
 
-  loadSeries().catch(error=>showStatus($('promptStatus'),`Không tải được series: ${error}`,'bad'));
+  loadSeries().then(restoreJobs).catch(error=>showStatus($('promptStatus'),`Không tải được series: ${error}`,'bad'));
 </script>
 </body>
 </html>

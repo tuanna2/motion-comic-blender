@@ -77,6 +77,33 @@ class BatchTests(unittest.TestCase):
         with self.assertRaisesRegex(BatchError, "duplicate"):
             load_batch(manifest)
 
+    def test_episode_plan_adds_compile_step(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name)
+        (root / "plan.json").write_text("{}", encoding="utf-8")
+        manifest = root / "batch.json"
+        manifest.write_text(
+            json.dumps(
+                {
+                    "version": "1.0",
+                    "episodes": [{"id": "planned", "episode_plan": "plan.json"}],
+                }
+            ),
+            encoding="utf-8",
+        )
+        plan = load_batch(manifest)
+        commands = build_job_commands(
+            plan,
+            plan.jobs[0],
+            python_bin="python3",
+            blender_bin="blender",
+            project_root=Path("/project"),
+        )
+        self.assertEqual(len(commands), 3)
+        self.assertIn("compile_episode.py", " ".join(commands[0]))
+        self.assertIn(".compiled", " ".join(commands[1]))
+
 
 if __name__ == "__main__":
     unittest.main()
